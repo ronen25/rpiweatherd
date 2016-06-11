@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+### BEGIN INIT INFO
+# Provides:          rpiweatherd
+# Required-Start:    $network $syslog
+# Required-Stop:     $network $syslog
+# Should-Start:      $named
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: A weather daemon logging data from temperature sensors
+# Description:       A weather daemon that logs and serves
+#					 temperature and humidity data collected from sensors.
+### END INIT INFO
+
+#       /etc/rc.d/init.d/rpiweatherd
+#		Init script for the rpiweatherd daemon.
+#
+#
+#		Author: Ronen Lapushner
+#		Version: 1.0
+#		http://www.github.com/ronen25/rpiweatherd
+
+
+start() {
+        echo -n "Starting rpiweatherd: "
+
+		sudo /usr/local/bin/rpiweatherd
+        return
+}
+
+stop() {
+        echo -n "Shutting down : "
+
+		sudo killall rpiweatherd
+        return
+}
+
+enable() {
+		echo -n "Enabling rpiweatherd: "
+
+		sudo update-rc.d rpiweather enable
+		return
+}
+
+disable() {
+		echo -n "Disabling rpiweatherd: "
+
+		sudo update-rc.d rpiweather disable
+		return
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+		if pgrep "rpiweatherd" > /dev/null
+		then
+			echo "rpiweatherd is running."
+		else
+			echo "rpiweatherd is not running."
+		fi
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage:  {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit $?

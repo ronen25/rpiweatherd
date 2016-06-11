@@ -1,0 +1,9 @@
+[submodule "deps/inih"]
+	path = deps/inih
+	url = https://github.com/benhoyt/inih
+[submodule "deps/parson"]
+	path = deps/parson
+	url = https://github.com/kgabis/parson
+[submodule "extra/deps/CheckedInput"]
+	path = extra/deps/CheckedInput
+	url = https://github.com/ronen25/CheckedInput

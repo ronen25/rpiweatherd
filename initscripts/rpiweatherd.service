@@ -1,0 +1,15 @@
+[Unit]
+Description=A small weather daemon that collects information from sensors
+After=network.target
+Requires=network.target
+
+[Service]
+Type=forking
+User=root
+PIDFile=/tmp/rpiweatherd.pid
+ExecStart=/usr/local/bin/rpiweatherd
+ExecStop=/usr/bin/killall rpiweatherd
+ExecReload=/usr/bin/killall -s SIGHUP rpiweatherd
+
+[Install]
+WantedBy=multi-user.target
