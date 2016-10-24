@@ -20,7 +20,7 @@ execute_process(COMMAND "python3" "${CMAKE_CURRENT_LIST_DIR}/deps/FindInitSystem
 string(REPLACE "\n" "" INIT_SYS_NAME "${INIT_SYS_NAME}")
 
 if (INIT_SYS_NAME STREQUAL "sysv" OR INIT_SYS_NAME STREQUAL "upstart")
-	file(INSTALL ${CMAKE_CURRENT_LIST_DIR}/initscripts/rpiweatherd DESTINATION /etc/init.d/
+	file(INSTALL ${CMAKE_CURRENT_LIST_DIR}/initscripts/rpiweatherd DESTINATION /etc/init.d/rpiweatherd
 		FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
 	message("Installed sysv/upstart init script.")
 elseif (INIT_SYS_NAME STREQUAL "systemd")
