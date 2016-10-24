@@ -52,5 +52,6 @@ target_link_libraries(rpiweatherd ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rpiweatherd rt)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
-# Install target
+# Install target and run script to determine init system
 install(TARGETS rpiweatherd DESTINATION bin)
+install(SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")

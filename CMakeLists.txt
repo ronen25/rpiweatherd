@@ -69,20 +69,3 @@ check_function_exists(flock  HAVE_FLOCK)
 check_function_exists(nanosleep HAVE_NANOSLEEP)
 check_function_exists(strptime HAVE_STRPTIME)
 
-# Install init script or system unit files - depending on the init system present
-execute_process(COMMAND "python3" "${PROJECT_SOURCE_DIR}/deps/FindInitSystem.py" 
-	OUTPUT_VARIABLE INIT_SYS_NAME)
-string(REPLACE "\n" "" INIT_SYS_NAME "${INIT_SYS_NAME}")
-
-if (${INIT_SYS_NAME} STREQUAL "sysv" OR ${INIT_SYS_NAME} STREQUAL "upstart")
-	message("Selecting sysv init script for sysv/upstart...")
-	INSTALL(FILES ${PROJECT_SOURCE_DIR}/initscripts/rpiweatherd DESTINATION /etc/init.d/
-			PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
-elseif (${INIT_SYS_NAME} STREQUAL "systemd")
-	message("Selecting systemd unit file...")
-	INSTALL(FILES ${PROJECT_SOURCE_DIR}/initscripts/rpiweatherd.service 
-		DESTINATION /etc/systemd/system/
-		PERMISSIONS )
-else()
-	message("Unknown init system: ${INIT_SYS_NAME}")
-endif ()
