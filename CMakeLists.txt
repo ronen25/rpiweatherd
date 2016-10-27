@@ -57,6 +57,7 @@ include_directories(devices)
 
 # Add subdirectories
 add_subdirectory(src)
+add_subdirectory(include)
 add_subdirectory(devices)
 add_subdirectory(deps/inih)
 
