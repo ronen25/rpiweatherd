@@ -37,12 +37,30 @@ static volatile sig_atomic_t __hupsignal = 0, __termsignal = 0;
 static int pid_fd;
 static char *config_path = NULL;
 
+/* ============================ Getopt long option table ============================= */
+static struct option rpiwd_long_options[] = {
+    { "config", required_argument, 0, 'c' },
+    { "genconfig", no_argument, 0, 'g' },
+    { "listdevices", no_argument, 0, 'l' },
+    { "version", no_argument, 0, 'v' },
+    { "help", no_argument, 0, 'h'},
+    { 0, 0, 0, 0 }
+};
+
+
+/* ============================ Signal Handlers ============================= */
 static void handle_sighup(int sig) {
 	__hupsignal = 1;
 }
 
 static void handle_sigterm(int sig) {
 	__termsignal = 1;
+}
+
+static void handle_exiting(void) {
+    // Close pid file
+    close(pid_fd);
+    unlink(PID_FILE);
 }
 
 void init_sighandling(void) {
@@ -58,8 +76,7 @@ void quit_logging(void) {
 	closelog();
 }
 
-void init_routine(void) {
-}
+void init_routine(void) { }
 
 void quit_routine(void) {
 	/* Quit various subsystems */
@@ -83,15 +100,17 @@ void version(void) {
 void help(void) {
 	printf("\nUsage: rpiweatherd [ -v | -h | -l | -g | -c PATH]\n");
 
-	printf("\n-c\tUse a different configuration file");
-	printf("\n-g\tGenerate a default configuration file");
-	printf("\n-l\tList all supported sensor devices");
-	printf("\n-v\tShow version information and exit");
-	printf("\n-h\tShow help string and exit\n");
+    printf("%-16s%-5s%-10s%-50s", "\n--config", "-c", "[path]", "Use a different configuration file");
+    printf("%-16s%-15s%-50s", "\n--genconfig", "-g", "Generate a default configuration file");
+    printf("%-16s%-15s%-50s", "\n--listdevices", "-l", "List all supported sensor devices");
+    printf("%-16s%-15s%-50s", "\n--version", "-v", "Show version information and exit");
+    printf("%-16s%-15s%-50s", "\n--help", "-h", "Show help string and exit\n");
+
+    fputc('\n', stdout);
 }
 
 void query_loop(void) {
-	int slept = 0, retflag, qattempts, ok_flag;
+    int slept = 0, retflag, qattempts, ok_flag;
 	float results[2];
 
 	/* Query loop */
@@ -159,8 +178,8 @@ void query_loop(void) {
 }
 
 int main(int argc, char **argv) {
-	int opt;
-	int slept = 0, retflag, qattempts, ok_flag, devinit_flag;
+    int opt, opt_index = 0;
+    int slept = 0, retflag, qattempts, ok_flag, devinit_flag;
 	float results[2];
 
 #ifdef RPIWD_DEBUG
@@ -171,14 +190,14 @@ int main(int argc, char **argv) {
 	version();
 
 	/* Parse arguments */
-	while ((opt = getopt(argc, argv, "glhvc:")) != -1) {
+    while ((opt = getopt_long(argc, argv, "glhvc:i", rpiwd_long_options, &opt_index)) != -1) {
 		switch (opt) {
 			case 'c': /* Use some custom configuration file */
 				{
 					if (optarg)
 						config_path = strdup(optarg);
 					else {
-						fprintf(stderr, "error: -c missing an argument\n");
+                        fprintf(stderr, "error: Missing path to configuration file.\n");
 						return EXIT_FAILURE;
 					}
 				}
@@ -192,7 +211,7 @@ int main(int argc, char **argv) {
 						perror("\nconfiguration error");
 					else {
 						printf("\nConfig file generated at %s.", CONFIG_FILE_DEFAULT_LOCATION);
-						printf("\nNote that you must still configure it before use!\n");
+                        printf("\nNOTE: Please configure it before use!\n");
 					}
 				}
 				return EXIT_SUCCESS;
@@ -208,76 +227,76 @@ int main(int argc, char **argv) {
 		}
 	}
 
+    /* Initialize wiringPi */
+    wiringPiSetup();
+
+    /* Parse configuration file */
+    if (!config_path)
+        config_path = strdup(CONFIG_FILE_DEFAULT_LOCATION);
+
+    if (init_current_config(config_path) < 0) {
+        fprintf(stderr, "%s: error: Could not read configuration file %s.\n",
+                argv[0], config_path);
+        return EXIT_FAILURE;
+    }
+
+    /* Check configuraton */
+    if (config_has_errors(get_current_config()) > 0) {
+        fprintf(stderr, "%s: error: Configuration errors encountered.\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    /* Check if PID file is there. */
+    if (pid_file_exists()) {
+        fprintf(stderr, "\nError: Pid file found at %s.\nEither a rpiweatherd instance " \
+                "is running, or that file is empty.", PID_FILE);
+        return EXIT_FAILURE;
+    }
+
+    /* Test and initialize measuring instrument */
+    devinit_flag = device_init_by_name(get_current_config()->device_name,
+            get_current_config()->device_config);
+    if (devinit_flag != RETCODE_DEVICE_INIT_OK) {
+        fprintf(stderr, "%s: error: Could not initialize device \"%s\". Please " \
+                "check configuration file.\n", argv[0],
+                get_current_config()->device_name);
+
+        return EXIT_FAILURE;
+    }
+
+    if (device_test_current() != 1) {
+        fprintf(stderr, "%s: error: Device \"%s\" at data pin %d failed self-testing.\n",
+                argv[0], get_current_config()->device_name,
+                get_current_device()->pin_data);
+
+        return EXIT_FAILURE;
+    }
+
 	/* Make into daemon */
 	if (daemon(0, 0) == -1) {
 		fprintf(stderr, "%s: error: failed to make into daemon.", argv[0]);
 		perror("\ndaemon:");
-		goto close_pidfile;
+
 		return EXIT_FAILURE;
 	}
+
+    /* Register exit handler */
+    atexit(handle_exiting);
 	
-	/* Check if PID file is there. */
-	if (pid_file_exists()) {
-		fprintf(stderr, "\nError: Pid file found at %s.\nEither a rpiweatherd instance " \
-				"is running, or that file is empty.", PID_FILE);
-		return EXIT_FAILURE;
-	}
-	else {
-		/* Write the PID file */
-		write_pid_file();
-	}
+    /* Write the PID file */
+    write_pid_file();
 
 	/* Initialize logging */
 	init_logging();
 
-	/* Parse configuration file */
-	if (!config_path)
-		config_path = strdup(CONFIG_FILE_DEFAULT_LOCATION);
-	
-	if (init_current_config(config_path) < 0) {
-		syslog(LOG_ERR, "%s: error: Could not read configuration file %s.\n", 
-				argv[0], config_path);
-		goto close_pidfile;
-		return EXIT_FAILURE;
-	}
-
 	/* Initialize signal handling */
 	init_sighandling();
-
-	/* Check configuraton */
-	if (config_has_errors(get_current_config()) > 0) {
-		syslog(LOG_ERR, "%s: error: Configuration errors encountered.\n", argv[0]);
-		goto close_pidfile;
-		return EXIT_FAILURE;
-	}
-
-	/* Initialize wiringPi */
-	wiringPiSetup();
-
-	/* Test and initialize measuring instrument */
-	devinit_flag = device_init_by_name(get_current_config()->device_name, 
-			get_current_config()->device_config);
-	if (devinit_flag != RETCODE_DEVICE_INIT_OK) {
-		syslog(LOG_ERR, "%s: error: Could not initialize device \"%s\". Please " \
-				"check configuration file.\n", argv[0], 
-				get_current_config()->device_name);
-		goto close_pidfile;
-		return EXIT_FAILURE;
-	}
-
-	if (device_test_current() != 1) {
-		syslog(LOG_ERR, "%s: error: Device \"%s\" at data pin %d failed self-testing.\n",
-				argv[0], get_current_config()->device_name, 
-				get_current_device()->pin_data);
-		goto close_pidfile;
-		return EXIT_FAILURE;
-	}
 
 	/* Initialize database */
 	if (init_dbhandler() == -1) {
 		syslog(LOG_ERR, "%s: error: Error initializing SQLite3 database.\n", argv[0]);
 		quit_dbhandler();
-		goto close_pidfile;
+
 		return EXIT_FAILURE;
 	}
 
@@ -287,10 +306,6 @@ int main(int argc, char **argv) {
 
 	/* Initiate query loop */
 	query_loop();
-
-close_pidfile:
-	close(pid_fd);
-	unlink(PID_FILE);
 
 #ifdef RPIWD_DEBUG
 	muntrace();
