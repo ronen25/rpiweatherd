@@ -19,7 +19,7 @@ project(rpiweatherd C)
 
 # Set version
 set(RPIWEATHERD_VERSION_MAJOR 1)
-set(RPIWEATHERD_VERSION_MINOR 0)
+set(RPIWEATHERD_VERSION_MINOR 1)
 
 # Set the server id by running 'lsb_release -is'
 execute_process(COMMAND "lsb_release" "-is" OUTPUT_VARIABLE DISTRO_NAME)
@@ -69,4 +69,3 @@ check_function_exists(getopt HAVE_GETOPT)
 check_function_exists(flock  HAVE_FLOCK)
 check_function_exists(nanosleep HAVE_NANOSLEEP)
 check_function_exists(strptime HAVE_STRPTIME)
-
