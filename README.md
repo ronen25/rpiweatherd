@@ -31,10 +31,7 @@ _Other distributions are not officialy supported but might also work._
 5. **CMake version 3.0 or newer**
 6. **SQLite3 development libraries version 3.5 or newer**
 7. **WiringPi version 1.1 or newer**
-8. **INIH library** _(pulled in as a submodule)_
-9. **Parson** _(pulled in as a submodule)_
-10. **CheckedInput Library** _(pulled in as a submodule)_
-11. **Python version 3.2 or newer**
+8. **Python version 3.2 or newer**
 
 ## Quick Setup Guide
 ### Installing Dependencies
@@ -46,9 +43,9 @@ Several development libraries must be installed in order to successfully compile
 |Arch Linux ARM|<code>$ sudo pacman -S cmake python gcc git make sqlite wiringpi lsb-release</code>|
 
 ### Building and Installing
-1) Clone the repository along with it's submodules.
+1) Clone the repository:
 ```
-    $ git clone --recursive https://github.com/ronen25/rpiweatherd
+    $ git clone https://github.com/ronen25/rpiweatherd
 ```
 
 2) Create a <code>bin</code> directory, switch to it, and initiate compilation using CMake.

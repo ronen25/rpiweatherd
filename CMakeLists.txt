@@ -52,14 +52,14 @@ add_custom_target(uninstall
 # Include directories
 include_directories(include)
 include_directories("${PROJECT_BINARY_DIR}")
-include_directories(deps/inih)
+include_directories(deps/)
 include_directories(devices)
 
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(include)
 add_subdirectory(devices)
-add_subdirectory(deps/inih)
+add_subdirectory(deps)
 
 # Find functions
 include(CheckFunctionExists)
