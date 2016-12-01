@@ -34,7 +34,7 @@
 
 /* Global variables */
 static volatile sig_atomic_t __hupsignal = 0, __termsignal = 0;
-static int pid_fd;
+static int pid_fd = -1;
 static char *config_path = NULL;
 
 /* ============================ Getopt long option table ============================= */
@@ -42,6 +42,7 @@ static struct option rpiwd_long_options[] = {
     { "config", required_argument, 0, 'c' },
     { "genconfig", no_argument, 0, 'g' },
     { "listdevices", no_argument, 0, 'l' },
+    { "foreground", no_argument, 0, 'f'},
     { "version", no_argument, 0, 'v' },
     { "help", no_argument, 0, 'h'},
     { 0, 0, 0, 0 }
@@ -59,8 +60,10 @@ static void handle_sigterm(int sig) {
 
 static void handle_exiting(void) {
     // Close pid file
-    close(pid_fd);
-    unlink(PID_FILE);
+    if (pid_fd != -1) {
+        close(pid_fd);
+        unlink(PID_FILE);
+    }
 }
 
 void init_sighandling(void) {
@@ -87,10 +90,6 @@ void quit_routine(void) {
 	/* Free memory */
 	free_current_config();
 	free(config_path);
-
-	/* Close and remove PID file */
-	close(pid_fd);
-	unlink(PID_FILE);
 }
 
 void version(void) {
@@ -100,11 +99,18 @@ void version(void) {
 void help(void) {
 	printf("\nUsage: rpiweatherd [ -v | -h | -l | -g | -c PATH]\n");
 
-    printf("%-16s%-5s%-10s%-50s", "\n--config", "-c", "[path]", "Use a different configuration file");
-    printf("%-16s%-15s%-50s", "\n--genconfig", "-g", "Generate a default configuration file");
-    printf("%-16s%-15s%-50s", "\n--listdevices", "-l", "List all supported sensor devices");
-    printf("%-16s%-15s%-50s", "\n--version", "-v", "Show version information and exit");
-    printf("%-16s%-15s%-50s", "\n--help", "-h", "Show help string and exit\n");
+    printf("%-16s%-5s%-10s%-50s", "\n--config", "-c", "[path]",
+           "Use a different configuration file");
+    printf("%-16s%-15s%-50s", "\n--genconfig", "-g",
+           "Generate a default configuration file");
+    printf("%-16s%-15s%-50s", "\n--listdevices", "-l",
+           "List all supported sensor devices");
+    printf("%-16s%-15s%-50s", "\n--foreground", "-f",
+           "Run in foreground (do not daemonize)");
+    printf("%-16s%-15s%-50s", "\n--version", "-v",
+           "Show version information and exit");
+    printf("%-16s%-15s%-50s", "\n--help", "-h",
+           "Show help string and exit\n");
 
     fputc('\n', stdout);
 }
@@ -180,7 +186,8 @@ void query_loop(void) {
 int main(int argc, char **argv) {
     int opt, opt_index = 0;
     int slept = 0, retflag, qattempts, ok_flag, devinit_flag;
-	float results[2];
+    float results[2];
+    bool run_in_foreground = false;
 
 #ifdef RPIWD_DEBUG
 	mtrace();
@@ -190,7 +197,7 @@ int main(int argc, char **argv) {
 	version();
 
 	/* Parse arguments */
-    while ((opt = getopt_long(argc, argv, "glhvc:i", rpiwd_long_options, &opt_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "glfhvc:i", rpiwd_long_options, &opt_index)) != -1) {
 		switch (opt) {
 			case 'c': /* Use some custom configuration file */
 				{
@@ -214,7 +221,10 @@ int main(int argc, char **argv) {
                         printf("\nNOTE: Please configure it before use!\n");
 					}
 				}
-				return EXIT_SUCCESS;
+                return EXIT_SUCCESS;
+            case 'f': /* Run in foreground */
+                run_in_foreground = true;
+                break;
 			case 'l': /* List all supported devices */
 				print_supported_device_names();
 				return EXIT_SUCCESS;
@@ -272,13 +282,15 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-	/* Make into daemon */
-	if (daemon(0, 0) == -1) {
-		fprintf(stderr, "%s: error: failed to make into daemon.", argv[0]);
-		perror("\ndaemon:");
+    /* Make into daemon */
+    if (!run_in_foreground) {
+        if (daemon(0, 0) == -1) {
+            fprintf(stderr, "%s: error: failed to make into daemon.", argv[0]);
+            perror("\ndaemon:");
 
-		return EXIT_FAILURE;
-	}
+            return EXIT_FAILURE;
+        }
+    }
 
     /* Register exit handler */
     atexit(handle_exiting);
