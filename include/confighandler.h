@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <limits.h>
 #include <sys/stat.h>
@@ -56,6 +57,7 @@
 #define CONFIG_NUM_WORKER_THREADS_MAX		4
 #define CONFIG_MAX_QUERY_ATTEMPTS			64
 
+/* Configuration structure */
 typedef struct rpiwd_config_s {
 	size_t config_count;
 	char *measure_location;
@@ -87,5 +89,9 @@ int config_has_errors(rpiwd_config *confstrct);
 int init_current_config(const char *config_path);
 rpiwd_config *get_current_config(void);
 void free_current_config(void);
+
+/* Getters/Setters for whether converion is required */
+bool get_conversion_required(void);
+void set_conversion_required(bool is_required);
 
 #endif /* RPIWD_CONFIGHANDLER_H */

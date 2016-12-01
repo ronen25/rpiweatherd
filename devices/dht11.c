@@ -69,16 +69,6 @@ int dht11_query_callback(int data_pin, char unit, float *arr) {
 		memset(buffer, 0, DHT11_MAX_RESULT_STRING_LEN);
 		sprintf(buffer, "%d.%d", data[0], data[1]);
 		arr[1] = atof(buffer);
-
-		/* Check if conversion if required */
-		if (unit == CONFIG_UNITS_UNITCHAR_METRIC)
-			;
-		else if (unit == CONFIG_UNITS_UNITCHAR_IMPERIAL) {
-			arr[0] *= 1.8000;
-			arr[0] += 32.00;
-		}
-		else
-			return RPIWD_DEVRETCODE_UNIT_ERROR;
 	}
 	else
 		return RPIWD_DEVRETCODE_DATA_FAILURE;

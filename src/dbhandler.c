@@ -21,7 +21,8 @@ static pthread_t __db_thread_pid;
 
 int init_dbhandler(void) {
 	int result = 0;
-	struct mq_attr attr;
+    struct mq_attr attr;
+    const char **sqlcmd = SQLCMD_TABLE_CREATION_QUERIES;
 
 	/* Open the database, or create it. */
 	result = sqlite3_open(DB_DEFAULT_FILE_PATH, &db);
@@ -31,12 +32,11 @@ int init_dbhandler(void) {
 		return -1;
 	}
 
-	/* Create the data table if it does not exist yet */
-	result += sqlite3_exec(db, SQLCMD_CREATE_DATA_TABLE_IF_NOT_EXISTS, NULL, NULL, NULL);
-
-	/* Create the stats table if it doesn't exist. */
-	result += sqlite3_exec(db, SQLCMD_CREATE_STATS_TABLE_IF_NOT_EXISTS, NULL, NULL, 
-			NULL);
+    /* Create all data tables */
+    while (*sqlcmd) {
+        result += sqlite3_exec(db, *sqlcmd, NULL, NULL, NULL);
+        sqlcmd++;
+    }
 
 	/* Write initial values to that table, only if it does not exist! */
 	result += sqlite3_exec(db, SQLCMD_INSERT_INITIAL_STATS, NULL, NULL, NULL);
@@ -63,7 +63,7 @@ int init_dbhandler(void) {
 	/* Initialize DB thread */
 	result = pthread_create(&__db_thread_pid, NULL, db_thread_event_loop, NULL);
 	if (result != 0)
-		syslog(LOG_ERR, "error: pthread_create: %s", strerror(errno));
+        syslog(LOG_ERR, "error: pthread_create: %s", strerror(errno));
 
 	/* DONE! */
 	return 1;
@@ -134,6 +134,8 @@ void *db_thread_event_loop(void *unused) {
 			/* Update statistics */
 			increase_stat(STAT_NAME_TOTAL_REQUESTS);
 		}
+        else if (msg_buffer.mtype == DB_MSGTYPE_CONVERT) {
+        }
 
 		/* Mark as complete and send back to reciever message queue */
 		msg_buffer.is_completed = 1;
@@ -175,8 +177,7 @@ static int write_raw_entry(float temp, float humid, const char *location, const 
 	int rc;
 
 	/* Prepare query */
-	char *qString = SQLCMD_WRITE_ENTRY;
-	rc = sqlite3_prepare_v2(db, qString, -1, &query, 0);
+    rc = sqlite3_prepare_v2(db, SQLCMD_WRITE_ENTRY, -1, &query, 0);
 	if (rc == SQLITE_OK) {
 		/* Bind parameters */
 		sqlite3_bind_double(query, 1, temp);
@@ -284,10 +285,15 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, int *errc
 			/* Initialize entry */
 			list->entries[i].id = sqlite3_column_int(query, 0);
 			list->entries[i].record_date = strdup(sqlite3_column_text(query, 1));
-			list->entries[i].temperature = sqlite3_column_double(query, 2);
 			list->entries[i].humidity = sqlite3_column_double(query, 3);
 			list->entries[i].location = strdup(sqlite3_column_text(query, 4));
 			list->entries[i].device_name = strdup(sqlite3_column_text(query, 5));
+
+            /* Fetch temperature and then check if a conversion is required. */
+            list->entries[i].temperature = sqlite3_column_double(query, 2);
+            if (get_conversion_required())
+                list->entries[i].temperature =
+                        list->entries[i].temperature * (9 / 5) + 32;
 
 			/* Increment i */
 			i++;
