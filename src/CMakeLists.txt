@@ -20,8 +20,7 @@ add_definitions(-D_BSD_SOURCE -D_POSIX_C_SOURCE=199309L -D_DEFAULT_SOURCE -D_XOP
 # Check for all device sources
 file(GLOB SOURCES *.c)
 file(GLOB DEVICES ${PROJECT_SOURCE_DIR}/devices/*.c)
-file(GLOB INIH ${PROJECT_SOURCE_DIR}/deps/inih/*.c)
-set(PARSON ${PROJECT_SOURCE_DIR}/deps/parson/parson.c)
+file(GLOB DEPS ${PROJECT_SOURCE_DIR}/deps/*.c)
 
 ## Find include paths
 find_library(WIRINGPI_LIBS NAMES wiringPi)
@@ -37,7 +36,7 @@ find_package_handle_standard_args(sqlite3 DEFAULT_MSG SQLITE3_LIBS SQLITE3_INCLU
 
 include_directories(${WIRINGPI_INCLUDES})
 include_directories(${SQLITE3_INCLUDES})
-include_directories(${PROJECT_SOURCE_DIR}/deps/parson)
+include_directories(${PROJECT_SOURCE_DIR}/deps/)
 
 ## Additional compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99")
@@ -46,7 +45,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99")
 set(CMAKE_C_FLAGS_DEBUG "-DRPIWD_DEBUG -g")
 
 # Add executable
-add_executable(rpiweatherd ${SOURCES} ${DEVICES} ${INIH} ${PARSON})
+add_executable(rpiweatherd ${SOURCES} ${DEVICES} ${DEPS})
 target_link_libraries(rpiweatherd ${WIRINGPI_LIBS} ${SQLITE3_LIBS})
 target_link_libraries(rpiweatherd ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rpiweatherd rt)
