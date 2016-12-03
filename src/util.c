@@ -16,6 +16,12 @@
 
 #include "util.h"
 
+static const char *SUPPORTED_DATETIME_FORMATS[] = {
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d",
+    NULL
+};
+
 int write_pid_file(void) {
 	int fd = 0;
 	char temp_buffer[PID_NUMBER_BUFFER_LENGTH];
@@ -204,3 +210,32 @@ time_t rpiwd_units_to_time_t(const char *unitstr, char operation) {
 	return now;
 }
 
+
+time_t normalize_date(const char *value, bool *rdtn_performed) {
+    time_t temp;
+    struct tm temptm = { 0 };
+    char *retval;
+
+    /* Check if it is the "now" string */
+    if (strcmp(value, "now") == 0)
+        return time(NULL);
+
+    for (const char **format_ptr = SUPPORTED_DATETIME_FORMATS;
+         *format_ptr; format_ptr++) {
+        if ((retval = strptime(value, *format_ptr, &temptm)) != NULL) {
+            temp = mktime(&temptm);
+            *rdtn_performed = false;
+
+            break;
+        }
+    }
+
+    /* Check value */
+    if (*rdtn_performed) {
+        /* Attempt to parse as rpiwd units */
+        temp = rpiwd_units_to_time_t(value, '-');
+    }
+
+    /* We tried all we can */
+    return temp;
+}
