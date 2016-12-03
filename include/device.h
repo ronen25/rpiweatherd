@@ -31,7 +31,7 @@
 #define RETCODE_DEVICE_INIT_UNKNOWN -1
 
 /* Typedefs for basic callbacks */
-typedef int (* device_callback)(int data_pin, char unit, float *arr);
+typedef int (* device_callback)(int data_pin, float *arr);
 typedef int (* device_test_callback)(int data_pin);
 
 typedef struct device_s {
@@ -51,7 +51,7 @@ int device_init_by_name(const char *device_name, int data_pin);
 int device_test_current(void);
 
 /* A function to query the current device */
-int device_query_current(char unit, float *arr);
+int device_query_current(float *arr);
 
 /* Get the selected device */
 device *get_current_device(void);

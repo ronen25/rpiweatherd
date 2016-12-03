@@ -114,7 +114,8 @@ void *db_thread_event_loop(void *unused) {
 		else if (msg_buffer.mtype == DB_MSGTYPE_FETCH) {
 			/* Execute query */
 			msg_buffer.data = exec_fetch_query(msg_buffer.fcountq, 
-					msg_buffer.fselectq, &msg_buffer.retcode);
+                    msg_buffer.fselectq, msg_buffer.is_conversion_needed,
+                    &msg_buffer.retcode);
 
 			/* Update statistics */
 			increase_stat(STAT_NAME_TOTAL_REQUESTS);
@@ -134,8 +135,6 @@ void *db_thread_event_loop(void *unused) {
 			/* Update statistics */
 			increase_stat(STAT_NAME_TOTAL_REQUESTS);
 		}
-        else if (msg_buffer.mtype == DB_MSGTYPE_CONVERT) {
-        }
 
 		/* Mark as complete and send back to reciever message queue */
 		msg_buffer.is_completed = 1;
@@ -261,7 +260,8 @@ size_t exec_formatted_count_query(const char *count_query) {
 	return count;
 }
 
-entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, int *errcode) {
+entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool convert,
+                            int *errcode) {
 	size_t count = exec_formatted_count_query(fcountq);
 	entrylist *list = entrylist_alloc(count);
 	sqlite3_stmt *query;
@@ -291,9 +291,9 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, int *errc
 
             /* Fetch temperature and then check if a conversion is required. */
             list->entries[i].temperature = sqlite3_column_double(query, 2);
-            if (get_conversion_required())
+            if (convert)
                 list->entries[i].temperature =
-                        list->entries[i].temperature * (9 / 5) + 32;
+                        list->entries[i].temperature * 9 / 5 + 32;
 
 			/* Increment i */
 			i++;

@@ -61,7 +61,6 @@
 typedef struct rpiwd_config_s {
 	size_t config_count;
 	char *measure_location;
-	char *units;
 	char *device_name;
 	int device_config;
 	char *query_interval;

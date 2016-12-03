@@ -19,6 +19,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
 #include <mqueue.h>
 
 /* Message types */
@@ -44,7 +46,9 @@ typedef struct rpiwd_mqmsg_s {
 	int sockfd;						/* Client socket to respond to (from HTTP handler) */
 	int retcode;					/* Operation return code (used for logging, etc.) */
 	mqd_t receiver_mq;				/* Reciever queue id (for read requests) */
-	char *fcountq, *fselectq; 		/* Formatted count and selection queries */
+    char *fcountq, *fselectq; 		/* Formatted count and selection queries */
+    bool is_conversion_needed;		/* Used for fetch queries to determine whether to
+                                       convert the measurment units used. */
 	void *data;
 } rpiwd_mqmsg;
 

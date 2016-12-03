@@ -37,14 +37,6 @@ static cmd_callback CMD_CALLBACK_TABLE[] = {
 
 /* =================================================================================== */
 
-const char *SUPPORTED_DATETIME_FORMATS[] = {
-	"%Y-%m-%d %H:%M",
-	"%Y-%m-%d",
-	NULL
-};
-
-/* =================================================================================== */
-
 /* Init/quit */
 void init_listener_loop(int num_worker_threads, int comm_port) {
 	/* Initialize main worker thread */
@@ -415,10 +407,10 @@ int dispatch_command(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 
 int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	time_t from = 0, to = 0, on = 0, temp;
-	struct tm temptm;
 	http_cmd_param *ptr;
 	char *retval;
-	int retflag = 0, rdtn_performed;
+    int retflag = 0;
+    bool needs_conversion = false, rdtn_performed;
 
 	/* Point at first argument, if any */
 	if (params->params)
@@ -427,55 +419,45 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 		return CALLBACK_RETCODE_PARAMS_MISSING;
 
 	/* Check parameters */
-	for (int i = 0; i < params->length; i++, ptr++) {
-		/* Zero memory */
-		memset(&temptm, 0, sizeof(struct tm));
-		rdtn_performed = 1;
+    for (int i = 0; i < params->length; i++, ptr++) {
+        rdtn_performed = true;
 
 		/* Check if parameter has value */
 		if (!ptr->value) {
 			retflag = CALLBACK_RETCODE_PARAM_ERROR;
 			break;
-		}
+        }
 
-		/* Generally, first check value against formats */
-		for (const char **format_ptr = SUPPORTED_DATETIME_FORMATS; 
-				*format_ptr != NULL; format_ptr++) {
-			if ((retval = strptime(ptr->value, *format_ptr, &temptm)) != NULL) {
-				temp = mktime(&temptm);
-				rdtn_performed = 0;
+        if (strcmp(ptr->name, "unit") == 0) {
+            if (ptr->value[0] == CONFIG_UNITS_UNITCHAR_IMPERIAL)
+                needs_conversion = true;
+            else if (ptr->value[0] != CONFIG_UNITS_UNITCHAR_METRIC) {
+                /* Unrecognized unit */
+                retflag = CALLBACK_RETCODE_PARAM_ERROR;
+                break;
+            }
+        }
+        else if (strcmp(ptr->name, "from") == 0 || strcmp(ptr->name, "to") == 0 ||
+                 strcmp(ptr->name, "on") == 0) {
+            /* Get date input and normalize it */
+            temp = normalize_date(ptr->value, &rdtn_performed);
+            if (temp == 0 || temp == -1) {
+                retflag = CALLBACK_RETCODE_PARAM_ERROR;
+                break;
+            }
 
-				break;
-			}
-		}
-
-		/* Check value */
-		if (rdtn_performed) {
-			/* Attempt to parse as rpiwd units */
-			temp = rpiwd_units_to_time_t(ptr->value, '-');
-		}
-
-		/* Check if it is the "now" string */
-		if (strcmp(ptr->value, "now") == 0 && !temp)
-			temp = time(NULL);
-
-		/* We tried all we can - check value now */
-		if (temp == -1 || temp == 0) {
-			retflag = CALLBACK_RETCODE_PARAM_ERROR;
-			break;
-		}
-
-		/* Check parameter name */
-		if (strcmp(ptr->name, "from") == 0)
-			from = rdtn_performed ? DAY_START(temp) : temp;
-		else if (strcmp(ptr->name, "to") == 0)
-			to = rdtn_performed ? DAY_END(temp) : temp;
-		else if (strcmp(ptr->name, "on") == 0)
-			on = temp;
-		else { /* Unknown parameter */
-			retflag = CALLBACK_RETCODE_UNKNOWN_PARAM;
-			break;
-		}
+            /* Check parameter name again */
+            if (strcmp(ptr->name, "from") == 0)
+                from = rdtn_performed ? DAY_START(temp) : temp;
+            else if (strcmp(ptr->name, "to") == 0)
+                to = rdtn_performed ? DAY_END(temp) : temp;
+            else if (strcmp(ptr->name, "on") == 0)
+                on = temp;
+        }
+        else {
+            retflag = CALLBACK_RETCODE_UNKNOWN_PARAM;
+            break;
+        }
 	}
 
 	/* If an error, return that error */
@@ -485,6 +467,7 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	/* Build SQL queries */
 	msgbuff->mtype = DB_MSGTYPE_FETCH;
 
+    /* Check date range parameters */
 	if (from && !to && !on) {
 		/* Use "BY_DATE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE, '>', difftime(from, 0));
@@ -512,7 +495,10 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 			   	difftime(DAY_END(on), 0));
 	}
 	else 
-		return CALLBACK_RETCODE_PARAM_ERROR;
+        return CALLBACK_RETCODE_PARAM_ERROR;
+
+    /* Check conversion required */
+    msgbuff->is_conversion_needed = needs_conversion;
 
 	return retflag;
 }
@@ -522,16 +508,33 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
  * For future versions, combine these two into a single function in device.c */
 int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	float temp[2];
-	int qattempts = 0, qflag;
+    int qattempts = 0, qflag;
+    bool conversion_needed = false;
 
-	/* Command should have no parameters at all */
-	if (params->length > 0)
-		return CALLBACK_RETCODE_NO_PARAMS_NEEDED;
+    /* Command should have one/no parameters. */
+    if (params->length == 1) {
+        http_cmd_param *param = &params->params[0];
+        switch (param->value[0]) {
+            case CONFIG_UNITS_UNITCHAR_IMPERIAL:
+                conversion_needed = true;
+                break;
+            case CONFIG_UNITS_UNITCHAR_METRIC:
+                break;
+            default:
+                return CALLBACK_RETCODE_PARAM_ERROR;
+        }
+    }
+    else if (params->length > 1)
+        return CALLBACK_RETCODE_TOO_MANY_PARAMS;
 
 	/* Query data */
 	do {
-		qflag = device_query_current(get_current_config()->units[0], temp);
-		qattempts++;
+        qflag = device_query_current(temp);
+        qattempts++;
+
+        /* Check if conversion is needed */
+        if (qflag == RPIWD_DEVRETCODE_SUCCESS && conversion_needed)
+            temp[0] = temp[0] * 9 / 5 + 32; /* Convert to F */
 	} while (qflag != RPIWD_DEVRETCODE_SUCCESS && qattempts < CONFIG_MAX_QUERY_ATTEMPTS);
 
 	/* Check whether query has been successful */
@@ -625,8 +628,6 @@ int config_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 
 	sprintf(temp_buffer, "%d", config_ptr->device_config);
 	key_value_list_emplace(kvlist, CONFIG_DEVICE_CONFIG, temp_buffer);
-
-	key_value_list_emplace(kvlist, CONFIG_UNITS, config_ptr->units);
 
 	sprintf(temp_buffer, "%d", config_ptr->comm_port);
 	key_value_list_emplace(kvlist, CONFIG_COMM_PORT, temp_buffer);

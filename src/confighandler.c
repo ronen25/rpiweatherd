@@ -19,7 +19,6 @@
 static rpiwd_config __current_configuration;
 static pthread_mutex_t __mtx_config = PTHREAD_MUTEX_INITIALIZER;
 static size_t temp_count;
-static bool __units_conversion_needed;
 
 /* Internal callback */
 int inih_callback(void *info, const char *section, const char *name, const char *value) {
@@ -39,12 +38,8 @@ int inih_callback(void *info, const char *section, const char *name, const char 
 			return CONFIG_ERROR_DEVICE_CONFIG; /* Configuration error */
 	}
     else if (strcmp(name, CONFIG_UNITS) == 0) {/* Default measurement units */
-        /* Get current unit */
-        confstrct->units = strdup(value);
-
-        /* If the unit is NOT Celsius, database handler would need
-         * to convert the units. */
-        __units_conversion_needed = (confstrct->units[0] != CONFIG_UNITS_UNITCHAR_METRIC);
+        fprintf(stderr, "\nWarning: \'units\' setting has been deprecated " \
+                "in version 1.1, and will be ignored.");
     }
 	else if (strcmp(name, CONFIG_COMM_PORT) == 0) /* Default communication port */ {
 		confstrct->comm_port = strtol(value, NULL, 10);
@@ -78,7 +73,6 @@ int write_config_file(const char *path, rpiwd_config *confstrct) {
 	/* Write general configuration */
 	fprintf(f, "[General]\n");
 	fprintf(f, "%s=%s\n", CONFIG_LOCATION, confstrct->measure_location);
-	fprintf(f, "%s=%s\n", CONFIG_UNITS, confstrct->units);
 	fprintf(f, "%s=%s\n", CONFIG_QUERY_INTERVAL, confstrct->query_interval);
 
 	/* Write device configuration */
@@ -112,9 +106,6 @@ void free_config(rpiwd_config *confstrct) {
 	if (confstrct->measure_location)
 		free(confstrct->measure_location);
 
-	if (confstrct->units)
-		free(confstrct->units);
-
 	if (confstrct->device_name)
 		free(confstrct->device_name);
 
@@ -130,7 +121,6 @@ int generate_blank_config(const char *path) {
 
 	/* Generate a configuration structure that contains only default values */
 	defconf.measure_location = defconf.device_name = NULL;
-	defconf.units = strdup(CONFIG_UNITS_DEFAULT);
 	defconf.query_interval = strdup(CONFIG_QUERY_INTERVAL_DEFAULT);
 	defconf.comm_port = CONFIG_COMM_PORT_DEFAULT;
 	defconf.num_worker_threads = CONFIG_NUM_WORKER_THREADS_DEFAULT;
@@ -161,14 +151,6 @@ int config_has_errors(rpiwd_config *confstrct) {
 	if (!confstrct->measure_location) {
 		flag++;
 		fprintf(stderr, "\nconfiguration error: Measurement location not set.");
-	}
-
-	/* Check units if metric or imperial. */
-	if (strcmp(confstrct->units, CONFIG_UNITS_METRIC) != 0 &&
-			strcmp(confstrct->units, CONFIG_UNITS_IMPERIAL) != 0) {
-		flag++;
-		fprintf(stderr, "\nconfiguration error: Unrecognized unit specifier \"%s\"",
-				confstrct->units);
 	}
 
 	/* Check if device name is supported */
@@ -226,8 +208,6 @@ rpiwd_config *get_current_config(void) {
 int init_current_config(const char *config_path) {
     int flag;
 
-    __units_conversion_needed = false;
-
 	pthread_mutex_lock(&__mtx_config);
 		flag = parse_config_file(config_path, &__current_configuration);
 	pthread_mutex_unlock(&__mtx_config);
@@ -239,18 +219,4 @@ void free_current_config(void) {
 	pthread_mutex_lock(&__mtx_config);
 		free_config(&__current_configuration);
 	pthread_mutex_unlock(&__mtx_config);
-}
-
-bool get_conversion_required() {
-    bool is_needed;
-
-    pthread_mutex_lock(&__mtx_config);
-        is_needed = __units_conversion_needed;
-    pthread_mutex_unlock(&__mtx_config);
-
-    return is_needed;
-}
-
-void set_conversion_required(bool is_required) {
-    __units_conversion_needed = is_required;
 }

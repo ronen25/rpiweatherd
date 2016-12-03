@@ -127,7 +127,7 @@ void query_loop(void) {
 
 		/* Query data */
 		while (!ok_flag && qattempts < CONFIG_MAX_QUERY_ATTEMPTS) {
-			retflag = device_query_current(get_current_config()->units[0], results);
+            retflag = device_query_current(results);
 
 			/* Check return value */
 			switch (retflag) {
@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
     /* Check if PID file is there. */
     if (pid_file_exists()) {
         fprintf(stderr, "\nError: Pid file found at %s.\nEither a rpiweatherd instance " \
-                "is running, or that file is empty.", PID_FILE);
+                "is running, or that file is empty.\n", PID_FILE);
         return EXIT_FAILURE;
     }
 

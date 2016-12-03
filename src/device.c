@@ -64,11 +64,11 @@ int device_test_current(void) {
 	return retflag;
 }
 
-int device_query_current(char unit, float *arr) {
+int device_query_current(float *arr) {
 	int retflag;
 
 	pthread_mutex_lock(&__mtx_device_lock);
-		retflag = __selected_device->query_function(__selected_device->pin_data, unit,
+        retflag = __selected_device->query_function(__selected_device->pin_data,
 				arr);
 	pthread_mutex_unlock(&__mtx_device_lock);
 

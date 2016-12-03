@@ -29,7 +29,7 @@
 #define DHT11_MAX_READS 				96
 #define DHT11_MAX_RESULT_STRING_LEN		8 /* xxx.xxx + '\0' ==> 8 characters */
 
-int dht11_query_callback(int data_pin, char unit, float *arr);
+int dht11_query_callback(int data_pin, float *arr);
 int dht11_test(int data_pin);
 
 #endif /* RPIWD_DHT11_H */

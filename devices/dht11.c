@@ -16,7 +16,7 @@
 
 #include "dht11.h"
 
-int dht11_query_callback(int data_pin, char unit, float *arr) {
+int dht11_query_callback(int data_pin, float *arr) {
 	uint8_t last_state = HIGH, count = 0, j = 0, i;
 	int data[5] = { 0, 0, 0, 0, 0 };
 	char buffer[DHT11_MAX_RESULT_STRING_LEN] = { 0 };
