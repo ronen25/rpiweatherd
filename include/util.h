@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #define PID_FILE "/tmp/rpiweatherd.pid"
 
@@ -57,6 +58,9 @@ int rpiwd_units_to_sqlite(const char *unitstr, char *sqlite_unit, float *unit_co
 char rpiwd_direction_to_char(const char *direction);
 time_t rpiwd_units_to_time_t(const char *unitstr, char operation);
 int is_rpiwd_units(const char *str);
+
+/* Date/time parsing */
+time_t normalize_date(const char *value, bool *rdtn_performed);
 
 /* Custom sleep function */
 void rpiwd_sleep(unsigned int milliseconds);
