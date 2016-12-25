@@ -44,13 +44,13 @@ void init_listener_loop(int num_worker_threads, int comm_port) {
 			(void *)comm_port);
 
 	if (result != 0) {
-		syslog(LOG_ERR, "Unable to create main listener thread: %s.", strerror(errno));
+        rpiwd_log(LOG_ERR, "Unable to create main listener thread: %s.", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	/* Set worker thread count globally */
 	if (num_worker_threads > MAX_WORKER_THREADS) {
-		syslog(LOG_WARNING, "num_worker_threads is bigger then %d; using max instead.",
+        rpiwd_log(LOG_WARNING, "num_worker_threads is bigger then %d; using max instead.",
 				MAX_WORKER_THREADS);
 		num_worker_threads = MAX_WORKER_THREADS;
 	}
@@ -68,7 +68,7 @@ void quit_listener_loop(void) {
 
 	/* Check return flag */
 	if (flag == -1)
-		syslog(LOG_ERR, "listener thread terminated with an error.");
+        rpiwd_log(LOG_ERR, "listener thread terminated with an error.");
 
 	/* Free descriptor array pointer */
 	free(__workers);
@@ -90,7 +90,7 @@ void *main_listener_loop(void *comm_port) {
 	/* Initialize worker thread array */
 	__workers = malloc(sizeof(pthread_t) * __num_workers);
 	if (!__workers) {
-		syslog(LOG_ERR, "Unable to allocate worker thread descriptor array: %s",
+        rpiwd_log(LOG_ERR, "Unable to allocate worker thread descriptor array: %s",
 				strerror(errno));
 		return (void *) -1;
 	}
@@ -101,7 +101,7 @@ void *main_listener_loop(void *comm_port) {
 	attr.mq_msgsize = LISTENER_MAX_MESSAGE_SIZE;
 	__worker_mqueue = mq_open(RPIWD_WORKER_QUEUE_NAME, O_CREAT | O_RDWR, 0666, &attr);
 	if (__worker_mqueue == (mqd_t) -1) {
-		syslog(LOG_ERR, "error creating worker thread queue: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "error creating worker thread queue: %s", strerror(errno));
 		return (void * )-1;
 	}
 
@@ -109,7 +109,7 @@ void *main_listener_loop(void *comm_port) {
 	for (i = 0; i < __num_workers; i++) {
 		flag = pthread_create(&__workers[i], NULL, worker_listener_loop, NULL);
 		if (flag != 0) {
-			syslog(LOG_ERR, "error creating worker thread: %s", strerror(errno));
+            rpiwd_log(LOG_ERR, "error creating worker thread: %s", strerror(errno));
 			return (void *) -2;
 		}
 	}
@@ -121,7 +121,7 @@ void *main_listener_loop(void *comm_port) {
 	/* Prepare main listener socket */
 	sockfd = get_bound_socket((int)comm_port);
 	if (sockfd == -1) {
-		syslog(LOG_ERR, "Could not get bound socket: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "Could not get bound socket: %s", strerror(errno));
 		return (void *) -1;
 	}
 
@@ -138,7 +138,7 @@ void *main_listener_loop(void *comm_port) {
 		addrlen = sizeof(struct sockaddr_storage);
 		clientsock = accept(sockfd, (struct sockaddr *)&claddr, &addrlen);
 		if (clientsock == -1) {
-			syslog(LOG_ERR, "error accepting connection: %s", strerror(errno));
+            rpiwd_log(LOG_ERR, "error accepting connection: %s", strerror(errno));
 			continue;
 		}
 
@@ -338,7 +338,7 @@ int get_bound_socket(int port) {
 	sprintf(str_port, "%d", port);
 
 	if (getaddrinfo(NULL, str_port, &hints, &result) != 0) {
-		syslog(LOG_ERR, "getaddrinfo error: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "getaddrinfo error: %s", strerror(errno));
 		return -1;
 	}
 

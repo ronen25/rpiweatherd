@@ -34,6 +34,7 @@
 #include "mqmsg.h"
 #include "datastructures.h"
 #include "confighandler.h"
+#include "logging.h"
 
 /* General constants */
 #define DB_DEFAULT_FILE_PATH                "/etc/rpiweatherd/rpiwd_data.db"

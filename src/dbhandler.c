@@ -27,8 +27,8 @@ int init_dbhandler(void) {
 	/* Open the database, or create it. */
 	result = sqlite3_open(DB_DEFAULT_FILE_PATH, &db);
 	if (result != SQLITE_OK) {
-		syslog(LOG_ERR, "error: Can't open SQLite database: %s",
-				sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "error: Can't open SQLite database: %s",
+                  sqlite3_errmsg(db));
 		return -1;
 	}
 
@@ -43,8 +43,8 @@ int init_dbhandler(void) {
 
 	/* Check if all operations are sucessful */
 	if (result != SQLITE_OK) {
-		syslog(LOG_ERR, "error when creating/opening database file: %s", 
-				sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "error when creating/opening database file: %s",
+                  sqlite3_errmsg(db));
 
 		sqlite3_close(db);
 		return -1;
@@ -56,14 +56,14 @@ int init_dbhandler(void) {
 	attr.mq_msgsize = MQ_MAXMSGSIZE;
 	__db_mqd = mq_open(RPIWD_DB_MQ_NAME, O_CREAT | O_RDWR, 0666, &attr);
 	if (__db_mqd == (mqd_t) -1) {
-		syslog(LOG_ERR, "error: mq_open: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "error: mq_open: %s", strerror(errno));
 		return -1;
 	}
 
 	/* Initialize DB thread */
 	result = pthread_create(&__db_thread_pid, NULL, db_thread_event_loop, NULL);
 	if (result != 0)
-        syslog(LOG_ERR, "error: pthread_create: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "error: pthread_create: %s", strerror(errno));
 
 	/* DONE! */
 	return 1;
@@ -186,13 +186,13 @@ static int write_raw_entry(float temp, float humid, const char *location, const 
 	}
 	else {
 		/* Log error */
-		syslog(LOG_ERR, "Error with preperation of statement: %s", sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "Error with preperation of statement: %s", sqlite3_errmsg(db));
 	}
 
 	/* Get result */
 	rc = sqlite3_step(query);
 	if (rc != SQLITE_DONE) {
-		syslog(LOG_ERR, "Error executing statement: %s", sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "Error executing statement: %s", sqlite3_errmsg(db));
 		sqlite3_finalize(query);
 		return -1;
 	}
@@ -245,13 +245,13 @@ size_t exec_formatted_count_query(const char *count_query) {
 		}
 		else {
 			count = 0;
-			syslog(LOG_ERR, "Error executing formatted count query: %s",
+            rpiwd_log(LOG_ERR, "Error executing formatted count query: %s",
 					sqlite3_errmsg(db));
 		}
 	}
 	else {
 		count = 0;
-		syslog(LOG_ERR, "Error executing formatted count query: %s",
+        rpiwd_log(LOG_ERR, "Error executing formatted count query: %s",
 				sqlite3_errmsg(db));
 	}
 
@@ -301,7 +301,7 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool conv
 	}
 	else {
 		/* Log error */
-		syslog(LOG_ERR, "Error retrieving entries by date: %s", sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "Error retrieving entries by date: %s", sqlite3_errmsg(db));
 		*errcode = DBHANDLER_ERROR_SQL_ERROR;
 	}
 

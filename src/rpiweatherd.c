@@ -71,14 +71,6 @@ void init_sighandling(void) {
 	signal(SIGTERM, handle_sigterm);
 }
 
-void init_logging(void) {
-	openlog("rpiweatherd", LOG_PID, LOG_USER);
-}
-
-void quit_logging(void) {
-	closelog();
-}
-
 void init_routine(void) { }
 
 void quit_routine(void) {
@@ -142,18 +134,18 @@ void query_loop(void) {
 				case RPIWD_DEVRETCODE_DEVICE_FAILURE:
 				case RPIWD_DEVRETCODE_DATA_FAILURE:
 				case RPIWD_DEVRETCODE_GENERAL_FAILURE:
-					syslog(LOG_WARNING, 
+					rpiwd_log(LOG_WARNING, 
 							"device %s failed to query; %d/%d attempts have been made.",
 							get_current_config()->device_name, ++qattempts, 
 							CONFIG_MAX_QUERY_ATTEMPTS);
 
 					break;
 				case RPIWD_DEVRETCODE_MEMORY_ERROR:
-					syslog(LOG_ERR, "out of memory to perform query.");
+					rpiwd_log(LOG_ERR, "out of memory to perform query.");
 					ok_flag = 1;
 					break;
 				default:
-					syslog(LOG_ERR, "error code %d encountered while querying.",
+					rpiwd_log(LOG_ERR, "error code %d encountered while querying.",
 							retflag);
 					break;
 			}
@@ -166,10 +158,8 @@ void query_loop(void) {
 		if (__hupsignal) { /* SIGHUP = Reload all configs, devices, etc. */
 			__hupsignal = 0;
 
-			quit_logging();
 			quit_dbhandler();
 			quit_listener_loop();
-			init_logging();
 			init_dbhandler();
 			free_current_config();
 			init_current_config(config_path);
@@ -299,14 +289,14 @@ int main(int argc, char **argv) {
     write_pid_file();
 
 	/* Initialize logging */
-	init_logging();
+    init_logging(run_in_foreground);
 
 	/* Initialize signal handling */
 	init_sighandling();
 
 	/* Initialize database */
 	if (init_dbhandler() == -1) {
-		syslog(LOG_ERR, "%s: error: Error initializing SQLite3 database.\n", argv[0]);
+		rpiwd_log(LOG_ERR, "%s: error: Error initializing SQLite3 database.\n", argv[0]);
 		quit_dbhandler();
 
 		return EXIT_FAILURE;

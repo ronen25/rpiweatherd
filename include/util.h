@@ -30,6 +30,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <syslog.h>
+
+#include "logging.h"
 
 #define PID_FILE "/tmp/rpiweatherd.pid"
 
