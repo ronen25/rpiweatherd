@@ -12,7 +12,7 @@ The repository contains all code and submodules needed to successfully compile a
 |---------|-----------|
 |<code>src/</code>|Source directory containing C source files|
 |<code>include/</code>|C Header files|
-|<code>initscripts/</code>|Init scripts|
+|<code>skel/</code>|Templates for configuration files and initialization scripts/units|
 |<code>devices/</code>|Device drivers|
 |<code>extra/</code>|Administration script and an Example CLI client|
 |<code>deps/</code>|Directory containing git submodules and Python scripts|
