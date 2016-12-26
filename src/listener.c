@@ -588,7 +588,7 @@ int statistics_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	key_value_list_emplace(lptr, "hostname", buffer);
 
 	/* Server version */
-	sprintf(buffer, "%d.%d", RPIWEATHERD_VERSION_MAJOR, RPIWEATHERD_VERSION_MINOR);
+    sprintf(buffer, "%s", RPIWEATHERD_VERSION);
 	key_value_list_emplace(lptr, "version", buffer);
 
 	/* System uptime */
