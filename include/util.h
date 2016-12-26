@@ -48,13 +48,10 @@
 #define PID_NUMBER_BUFFER_LENGTH	16
 
 /* ASCII Art defines */
-#define ASCII_TITLE "            _                    _   _                  _\n" \
-	" _ __ _ __ (_)_      _____  __ _| |_| |__   ___ _ __ __| |\n" \
-	"| '__| '_ \\| \\ \\ /\\ / / _ \\/ _` | __| '_ \\ / _ \\ '__/ _` |\n" \
-	"| |  | |_) | |\\ V  V /  __/ (_| | |_| | | |  __/ | | (_| |\n" \
-	"|_|  | .__/|_| \\_/\\_/ \\___|\\__,_|\\__|_| |_|\\___|_|  \\__,_| " \
-	" Version %d.%d\n" \
-	"     |_|                                                  \n"
+#define ASCII_TITLE "rpiweatherd, version %s\n" \
+                    "Copyright (C) 2016-2017 Ronen Lapushner.\n\n" \
+                    "License GPLv3+: GNU GPL version 3 or later " \
+                    "<http://gnu.org/licenses/gpl.html>\n" \
 
 /* Conversion from rpiwd time units to seconds */
 unsigned int rpiwd_units_to_milliseconds(const char *unitstr);

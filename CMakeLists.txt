@@ -17,19 +17,45 @@
 cmake_minimum_required(VERSION 2.6)
 project(rpiweatherd C)
 
-# Set version
-set(RPIWEATHERD_VERSION_MAJOR 1)
-set(RPIWEATHERD_VERSION_MINOR 1)
+# Find git information
+# Get the current working branch
+execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+    COMMAND git log -1 --format=%h
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Set version string
+if(NOT GIT_BRANCH EQUAL "master")
+    # Set versions
+    set(RPIWEATHERD_VERSION "\"${GIT_BRANCH}-${GIT_COMMIT_HASH}\"")
+    set(RPIWEATHERD_VERSION_RAW "${GIT_BRANCH}-${GIT_COMMIT_HASH}")
+else()
+    # Read version information from file
+    file(READ version RPIWEATHERD_VERSION)
+
+    # Set versions
+    set(RPIWEATHERD_VERSION_RAW RPIWEATHERD_VERSION)
+    set(RPIWEATHERD_VERSION "\"${RPIWEATHERD_VERSION}\"")
+endif()
+
+# Set build date
+string(TIMESTAMP RPIWEATHERD_BUILD_DATE)
+if (RPIWEATHERD_BUILD_DATE EQUAL "")
+    set(RPIWEATHERD_BUILD_DATE "")
+endif()
 
 # Set the server id by running 'lsb_release -is'
-execute_process(COMMAND "lsb_release" "-is" OUTPUT_VARIABLE DISTRO_NAME)
-if (DISTRO_NAME STREQUAL "")
-	message(WARNING "Could not execute 'lsb_release -is'; default server ID used.")
-	set(RPIWEATHERD_FULL_SERVER_ID "\"rpiweatherd v.${RPIWEATHERD_VERSION_MAJOR}.${RPIWEATHERD_VERSION_MINOR}\"")
-else()
-	string(REPLACE "\n" "" DISTRO_NAME "${DISTRO_NAME}")
-	set(RPIWEATHERD_FULL_SERVER_ID "\"rpiweatherd v.${RPIWEATHERD_VERSION_MAJOR}.${RPIWEATHERD_VERSION_MINOR} (${DISTRO_NAME})\"")
-endif()
+set(RPIWEATHERD_FULL_SERVER_ID "\"rpiweatherd/${RPIWEATHERD_VERSION_RAW}\"")
 
 # Set policies
 cmake_policy(SET CMP0014 OLD)

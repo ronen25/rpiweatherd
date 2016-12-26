@@ -85,7 +85,8 @@ void quit_routine(void) {
 }
 
 void version(void) {
-	printf(ASCII_TITLE, RPIWEATHERD_VERSION_MAJOR, RPIWEATHERD_VERSION_MINOR);
+    printf(ASCII_TITLE, RPIWEATHERD_VERSION,
+            RPIWEATHERD_BUILD_DATE ? RPIWEATHERD_BUILD_DATE : "unknown");
 }
 
 void help(void) {
