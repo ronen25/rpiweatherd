@@ -58,6 +58,6 @@ install(SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
 # Install files in skel folder and create it
 install(DIRECTORY DESTINATION "/etc/rpiweatherd/skel")
 install(FILES "${PROJECT_SOURCE_DIR}/skel/rpiweatherd.conf"
-    DESTINATION "/etc/rpiweatherd/skel/rpiweatherd.conf")
+    DESTINATION "/etc/rpiweatherd/skel")
 install(FILES "${PROJECT_SOURCE_DIR}/skel/rpiwd_triggers.conf"
-    DESTINATION "/etc/rpiweatherd/skel/rpiwd_triggers.conf")
+    DESTINATION "/etc/rpiweatherd/skel")
