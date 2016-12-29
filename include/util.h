@@ -46,6 +46,7 @@
 #define DIRECTION_STRING_TO "to"
 
 #define PID_NUMBER_BUFFER_LENGTH	16
+#define RPIWD_COPYFILE_BUFFSIZE     2048
 
 /* ASCII Art defines */
 #define ASCII_TITLE "rpiweatherd, version %s\n" \
@@ -72,5 +73,9 @@ char *rpiwd_getline(const char *line, const char *newline);
 /* Daemon PID File and checks */
 int pid_file_exists(void);
 int write_pid_file(void);
+
+/* File utilities */
+int rpiwd_copyfile(const char *src, const char *dest);
+int rpiwd_file_exists(const char *path);
 
 #endif /* RPIWD_UTIL_H */

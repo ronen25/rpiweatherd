@@ -28,9 +28,11 @@
 
 #include "ini.h"
 #include "device.h"
+#include "util.h"
 
 #define CONFIG_FILE_DEFAULT_LOCATION 		"/etc/rpiweatherd/rpiweatherd.conf"
 #define CONFIG_FILE_DEFAULT_FOLDER			"/etc/rpiweatherd"
+#define CONFIG_BLANK_FILE_LOCATION          "/etc/rpiweatherd/skel/rpiweatherd.conf"
 #define CONFIG_LOCATION				 		"measure_location"
 #define CONFIG_QUERY_INTERVAL		 		"query_interval"
 #define CONFIG_DEVICE_NAME			 		"device_name"

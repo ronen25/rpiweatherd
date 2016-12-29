@@ -22,7 +22,15 @@ static size_t temp_count;
 
 /* Internal callback */
 int inih_callback(void *info, const char *section, const char *name, const char *value) {
-	rpiwd_config *confstrct = (rpiwd_config *)info;
+    rpiwd_config *confstrct = (rpiwd_config *)info;
+
+    /* Check if value has any content.
+     * All values in the configuration must have values. */
+    if (!*value) {
+        fprintf(stderr, "\nERROR: configuration key '%s' is missing a value.\n",
+                name);
+        return 0;
+    }
 
 	/* Get query interval */
 	if (strcmp(name, CONFIG_LOCATION) == 0) /* Measurement location */
@@ -116,30 +124,14 @@ void free_config(rpiwd_config *confstrct) {
 }
 
 int generate_blank_config(const char *path) {
-	rpiwd_config defconf;
-	int write_flag, status;
+    /* Attempt to copy the blank configuration file in /etc/rpiweatherd/skel */
+    int status = rpiwd_copyfile(CONFIG_BLANK_FILE_LOCATION, path);
+    if (!status) {
+        perror("rpiwd_copyfle");
+        return -1;
+    }
 
-	/* Generate a configuration structure that contains only default values */
-	defconf.measure_location = defconf.device_name = NULL;
-	defconf.query_interval = strdup(CONFIG_QUERY_INTERVAL_DEFAULT);
-	defconf.comm_port = CONFIG_COMM_PORT_DEFAULT;
-	defconf.num_worker_threads = CONFIG_NUM_WORKER_THREADS_DEFAULT;
-	defconf.device_config = 0;
-
-	/* Create the folder if needed */
-	status = mkdir(CONFIG_FILE_DEFAULT_FOLDER, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if (status < 0)
-		perror("mkdir");
-
-	/* Write this configuration */
-	if (write_config_file(path, &defconf) == -1) {
-		free_config(&defconf);
-		return -1;
-	}
-
-	/* Free and return */
-	free_config(&defconf);
-	return 0;
+    return 1;
 }
 
 /* A configuration checker */

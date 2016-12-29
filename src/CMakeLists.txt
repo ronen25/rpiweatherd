@@ -22,7 +22,10 @@ file(GLOB SOURCES *.c)
 file(GLOB DEVICES ${PROJECT_SOURCE_DIR}/devices/*.c)
 file(GLOB DEPS ${PROJECT_SOURCE_DIR}/deps/*.c)
 
-## Find include paths
+# Configure inih with additional defines
+add_definitions(-DINI_STOP_ON_FIRST_ERROR=1)
+
+# Find include paths
 find_library(WIRINGPI_LIBS NAMES wiringPi)
 find_path(WIRINGPI_INCLUDES NAMES wiringPi.h)
 find_library(SQLITE3_LIBS NAMES sqlite3)

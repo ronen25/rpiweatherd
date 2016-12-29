@@ -239,3 +239,42 @@ time_t normalize_date(const char *value, bool *rdtn_performed) {
     /* We tried all we can */
     return temp;
 }
+
+int rpiwd_copyfile(const char *src, const char *dest) {
+    FILE *fsrc, *fdst;
+    char buffer[RPIWD_COPYFILE_BUFFSIZE];
+    size_t read_bytes = 0, written_bytes = 0;
+
+    /* Open source and dest file */
+    fsrc = fopen(src, "rb");
+    if (!fsrc)
+        return 0;
+
+    fdst = fopen(dest, "wb");
+    if (!fdst)
+        return 0;
+
+    /* Read/Write loop */
+    while ((read_bytes =
+            fread(buffer, sizeof(char), RPIWD_COPYFILE_BUFFSIZE, fsrc)) != 0) {
+        written_bytes = fwrite(buffer, sizeof(char), read_bytes, fdst);
+        if (written_bytes != read_bytes) {
+            fclose(fsrc);
+            fclose(fdst);
+
+            return -1;
+        }
+    }
+
+    /* Done. */
+    fclose(fsrc);
+
+    fflush(fdst);
+    fclose(fdst);
+
+    return 1;
+}
+
+int rpiwd_file_exists(const char *path) {
+    return access(path, F_OK) != -1;
+}

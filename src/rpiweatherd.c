@@ -189,7 +189,8 @@ int main(int argc, char **argv) {
 	version();
 
 	/* Parse arguments */
-    while ((opt = getopt_long(argc, argv, "glfhvc:i", rpiwd_long_options, &opt_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "glfhvc:i", rpiwd_long_options,
+                              &opt_index)) != -1) {
 		switch (opt) {
 			case 'c': /* Use some custom configuration file */
 				{
@@ -204,12 +205,28 @@ int main(int argc, char **argv) {
 			case 'v': /* Show version information (already shown!) */
 				return EXIT_SUCCESS;
 			case 'g': /* Create a blank configuration file */
-				{
-					int status = generate_blank_config(CONFIG_FILE_DEFAULT_LOCATION);
+                {
+                    /* Check if the file already exists */
+                    if (rpiwd_file_exists(CONFIG_FILE_DEFAULT_LOCATION)) {
+                        printf("\nA configuration file is already present at '%s'.\n" \
+                               "Remove it and replace it with a blank file? (y/n) ",
+                               CONFIG_FILE_DEFAULT_FOLDER);
+
+                        /* Input answer */
+                        scanf("%c", &opt);
+                        if (opt == 'y' || opt == 'Y')
+                            remove(CONFIG_FILE_DEFAULT_LOCATION);
+                        else
+                            return EXIT_SUCCESS;
+                    }
+
+                    /* Generate a new configuration filee */
+                    int status = generate_blank_config(CONFIG_FILE_DEFAULT_LOCATION);
 					if (status == -1)
 						perror("\nconfiguration error");
 					else {
-						printf("\nConfig file generated at %s.", CONFIG_FILE_DEFAULT_LOCATION);
+                        printf("\nConfig file generated at %s.",
+                               CONFIG_FILE_DEFAULT_LOCATION);
                         printf("\nNOTE: Please configure it before use!\n");
 					}
 				}
@@ -236,8 +253,8 @@ int main(int argc, char **argv) {
     if (!config_path)
         config_path = strdup(CONFIG_FILE_DEFAULT_LOCATION);
 
-    if (init_current_config(config_path) < 0) {
-        fprintf(stderr, "%s: error: Could not read configuration file %s.\n",
+    if (init_current_config(config_path) != 0) {
+        fprintf(stderr, "%s: errors in configuration file %s.\n",
                 argv[0], config_path);
         return EXIT_FAILURE;
     }
