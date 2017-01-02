@@ -60,15 +60,9 @@ Several development libraries must be installed in order to successfully compile
 ```
     $ sudo make install
 ```
+4) Configure <code>rpiweatherd</code> according to the [configuration guide](https://github.com/ronen25/rpiweatherd/wiki/Dameon-Configuration).
 
-4) Generate a barebones configuration.
-```
-    $ sudo rpiweatherd -g
-```
-
-5) Configure <code>rpiweatherd</code> according to the [configuration guide](https://github.com/ronen25/rpiweatherd/wiki/Dameon-Configuration).
-
-6) Run the program using the appropriate init tool, either as root or with <code>sudo</code>:
+5) Run the program using the appropriate init tool, either as root or with <code>sudo</code>:
 
 |Distribution Name|Command to Install|
 |-----------------|------------------|
