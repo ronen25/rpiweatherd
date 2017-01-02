@@ -69,12 +69,12 @@ Several development libraries must be installed in order to successfully compile
 |Raspbian/Ubuntu|<code># service start rpiweatherd</code>|
 |Arch Linux ARM|<code># systemctl enable rpiweatherd</code>|
 
-7) Test the installation by issuing the [<code>current</code> command](https://github.com/ronen25/rpiweatherd/wiki/Getting-Data#current) from any web browser:
+6) Test the installation by issuing the [<code>current</code> command](https://github.com/ronen25/rpiweatherd/wiki/Getting-Data#current) from any web browser:
 ```
     http://[ip-of-pi]/current
 ```
 
-8) Daemon administration and a reference client can be found in the <code>extra/</code> folder.
+7) Daemon administration and a reference client can be found in the <code>extra/</code> folder.
 
 ## Clients
 The repository provides the <code>rpiweatherd-cli.py</code> client, which is a very simple, proof-of-concept client using a command-line interface.
