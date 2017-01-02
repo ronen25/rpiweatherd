@@ -15,7 +15,7 @@ The repository contains all code and submodules needed to successfully compile a
 |<code>skel/</code>|Templates for configuration files and initialization scripts/units|
 |<code>devices/</code>|Device drivers|
 |<code>extra/</code>|Administration script and an Example CLI client|
-|<code>deps/</code>|Directory containing git submodules and Python scripts|
+|<code>deps/</code>|Dependencies required for building the daemon|
 
 ## Dependencies and Requirements
 1. **Raspberry Pi**
