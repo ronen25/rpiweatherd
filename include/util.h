@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@
 
 /* ASCII Art defines */
 #define ASCII_TITLE "rpiweatherd, version %s\n" \
-                    "Copyright (C) 2016-2017 Ronen Lapushner.\n\n" \
+                    "Copyright (C) 2016-2017-2017 Ronen Lapushner.\n\n" \
                     "License GPLv3+: GNU GPL version 3 or later " \
                     "<http://gnu.org/licenses/gpl.html>\n" \
 
