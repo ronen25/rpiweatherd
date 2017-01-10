@@ -58,7 +58,13 @@ int inih_callback(void *info, const char *section, const char *name, const char 
 		confstrct->num_worker_threads = strtol(value, NULL, 10);
 		if (errno == ERANGE)
 			return CONFIG_ERROR_NUM_WTHREADS; /* Configuration error */
-	}
+    }
+    else if (strcmp(name, CONFIG_AUTO_UPDATE_TRIGGERS) == 0) /* Auto-update triggers */ {
+        confstrct->auto_update_triggers = strtol(value, NULL, 10);
+        if (errno == ERANGE || confstrct->auto_update_triggers != true ||
+            confstrct->auto_update_triggers != false)
+            return CONFIG_ERROR_AUTO_UPDATE_TRIGGERS;
+    }
 	else
 		return 0; /* Unknown section, name or error */
 
