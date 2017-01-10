@@ -19,7 +19,7 @@ The repository contains all code and submodules needed to successfully compile a
 
 ## Dependencies and Requirements
 1. **Raspberry Pi**
-<br />_Tested only on Model A+ and RPi 2 Model B_
+<br />_Tested on Model A+ and RPi 2/3 Model B_
 2. **Raspbian 7 Wheezy or newer** <br />
    **Ubuntu 14.04 or newer** <br />
    **Arch Linux** <br />
