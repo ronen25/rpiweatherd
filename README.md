@@ -40,7 +40,7 @@ Several development libraries must be installed in order to successfully compile
 |Distribution Name|Command to Install|
 |-----------------|------------------|
 |Raspbian/Ubuntu|<code>$ sudo apt-get install cmake python3 gcc make git libsqlite3-dev wiringpi</code>|
-|Arch Linux ARM|<code>$ sudo pacman -S cmake python gcc git make sqlite wiringpi lsb-release</code>|
+|Arch Linux ARM|<code>$ sudo pacman -S cmake python gcc git make sqlite wiringpi</code>|
 
 ### Building and Installing
 1) Clone the repository:
