@@ -23,12 +23,12 @@ void init_logging(bool is_foreground) {
     __rpiwd_log_is_foreground = is_foreground;
 
     /* Determine whether to open a syslog or to write to stderr */
-    if (__rpiwd_log_is_foreground)
+    if (!__rpiwd_log_is_foreground)
         openlog("rpiweatherd", LOG_PID, LOG_USER);
 }
 
 void quit_logging(void) {
-    if (__rpiwd_log_is_foreground)
+    if (!__rpiwd_log_is_foreground)
         closelog();
 }
 
