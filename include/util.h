@@ -47,10 +47,11 @@
 
 #define PID_NUMBER_BUFFER_LENGTH	16
 #define RPIWD_COPYFILE_BUFFSIZE     2048
+#define RPIWD_DOUBLE_BUFFER_LENGTH   24
 
 /* ASCII Art defines */
 #define ASCII_TITLE "rpiweatherd, version %s\n" \
-                    "Copyright (C) 2016-2017-2017 Ronen Lapushner.\n\n" \
+                    "Copyright (C) 2016-2017 Ronen Lapushner.\n\n" \
                     "License GPLv3+: GNU GPL version 3 or later " \
                     "<http://gnu.org/licenses/gpl.html>\n" \
 
@@ -77,5 +78,8 @@ int write_pid_file(void);
 /* File utilities */
 int rpiwd_copyfile(const char *src, const char *dest);
 int rpiwd_file_exists(const char *path);
+
+/* Conversion Helpers */
+int rpiwd_is_number(const char *str);
 
 #endif /* RPIWD_UTIL_H */
