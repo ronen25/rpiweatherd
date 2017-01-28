@@ -278,3 +278,15 @@ int rpiwd_copyfile(const char *src, const char *dest) {
 int rpiwd_file_exists(const char *path) {
     return access(path, F_OK) != -1;
 }
+
+int rpiwd_is_number(const char *str) {
+    const char *ptr = str;
+    while (*ptr) {
+        if (!isdigit(*ptr))
+            return 0;
+
+        ptr++;
+    }
+
+    return 1;
+}
