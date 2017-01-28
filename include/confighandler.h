@@ -40,19 +40,16 @@
 #define CONFIG_UNITS				 		"units"
 #define CONFIG_COMM_PORT			 		"comm_port"
 #define CONFIG_NUM_WORKER_THREADS			"num_worker_threads"
-#define CONFIG_AUTO_UPDATE_TRIGGERS         "auto_update_triggers"
 
 #define CONFIG_ERROR_COMM_PORT 		 		-1
 #define CONFIG_ERROR_DEVICE_CONFIG	 		-2
 #define CONFIG_ERROR_NUM_WTHREADS			-3
-#define CONFIG_ERROR_AUTO_UPDATE_TRIGGERS   -4
 
 /* Possible configuration values */
 #define CONFIG_UNITS_METRIC					"metric"
 #define CONFIG_UNITS_IMPERIAL				"imperial"
 #define CONFIG_UNITS_UNITCHAR_METRIC		'm'
 #define CONFIG_UNITS_UNITCHAR_IMPERIAL		'i'
-#define CONFIG_AUTO_UPDATE_TRIGGERS_DEFAULT false
 
 /* Default values */
 #define CONFIG_QUERY_INTERVAL_DEFAULT		"1h"
@@ -72,7 +69,6 @@ typedef struct rpiwd_config_s {
 	char *query_interval;
 	int comm_port;
     int num_worker_threads;
-    bool auto_update_triggers;
 } rpiwd_config;
 
 /* Internal callback */
