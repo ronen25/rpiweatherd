@@ -56,24 +56,14 @@ static void handle_sighup(int sig) {
 	__hupsignal = 1;
 }
 
-static void handle_sigterm(int sig) {
+static void handle_sigterm_sigint(int sig) {
 	__termsignal = 1;
-}
-
-static void handle_exiting(void) {
-    /* Close pid file */
-    if (pid_fd != -1) {
-        close(pid_fd);
-        unlink(PID_FILE);
-    }
-
-    /* Quit logging */
-    quit_logging();
 }
 
 void init_sighandling(void) {
 	signal(SIGHUP, handle_sighup);
-	signal(SIGTERM, handle_sigterm);
+    signal(SIGTERM, handle_sigterm_sigint);
+    signal(SIGINT, handle_sigterm_sigint);
 }
 
 void init_routine(void) { }
@@ -87,7 +77,13 @@ void quit_routine(void) {
 
 	/* Free memory */
 	free_current_config();
-	free(config_path);
+    free(config_path);
+
+    /* Close pid file */
+    if (pid_fd != -1) {
+        close(pid_fd);
+        remove(PID_FILE);
+    }
 }
 
 void version(void) {
@@ -178,7 +174,7 @@ void query_loop(void) {
 			init_listener_loop(get_current_config()->num_worker_threads, 
                                get_current_config()->comm_port);
 		}
-		else if (__termsignal) { /* SIGTERM = Terminate application (quickly) */
+        else if (__termsignal) { /* SIGTERM = Terminate application (quickly) */
 			quit_routine();
 			break;
 		}
@@ -323,11 +319,8 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* Register exit handler */
-    atexit(handle_exiting);
-	
     /* Write the PID file */
-    write_pid_file();
+    pid_fd = write_pid_file();
 
 	/* Initialize signal handling */
 	init_sighandling();

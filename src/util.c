@@ -26,7 +26,7 @@ int write_pid_file(void) {
 	int fd = 0;
 	char temp_buffer[PID_NUMBER_BUFFER_LENGTH];
 
-	if ((fd = open(PID_FILE, O_RDWR | O_CREAT | O_EXCL, 0444)) == -1)
+    if ((fd = open(PID_FILE, O_RDWR | O_CREAT | O_EXCL, 0444)) == -1)
 		return 0;
 	else {
 		/* Write PID */
