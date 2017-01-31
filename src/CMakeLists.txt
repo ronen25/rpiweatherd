@@ -40,6 +40,7 @@ find_package_handle_standard_args(sqlite3 DEFAULT_MSG SQLITE3_LIBS SQLITE3_INCLU
 include_directories(${WIRINGPI_INCLUDES})
 include_directories(${SQLITE3_INCLUDES})
 include_directories(${PROJECT_SOURCE_DIR}/deps/)
+include_directories(${PROJECT_SOURCE_DIR}/devices/)
 
 ## Additional compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99")

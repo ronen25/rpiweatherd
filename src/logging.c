@@ -34,13 +34,21 @@ void quit_logging(void) {
 
 void rpiwd_log(int priority, const char *msg, ...) {
     va_list arglist;
+    FILE *log_stream;
 
     /* Get argument list */
     va_start(arglist, msg);
 
     /* Log */
-    if (__rpiwd_log_is_foreground)
-        vfprintf(stderr, msg, arglist);
+    if (__rpiwd_log_is_foreground) {
+        if (priority == LOG_ERR)
+            log_stream = stderr;
+        else
+            log_stream = stdout;
+
+        vfprintf(log_stream, msg, arglist);
+        fputc('\n', log_stream);
+    }
     else
         vsyslog(priority, msg, arglist);
 

@@ -23,7 +23,7 @@
 #include <pthread.h>
 #include <wiringPi.h>
 
-#include "devretcodes.h"
+#include "devicevals.h"
 #include "dht11.h"
 
 /* Function return codes */

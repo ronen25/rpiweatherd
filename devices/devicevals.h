@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,12 +17,19 @@
 #ifndef RPIWD_DEVRETCODES_H
 #define RPIWD_DEVRETCODES_H
 
-/* Device return codes */
-#define RPIWD_DEVRETCODE_SUCCESS 0
-#define RPIWD_DEVRETCODE_DEVICE_FAILURE -1
-#define RPIWD_DEVRETCODE_DATA_FAILURE	-2
+/* Constants */
+#define RPIWD_MAX_MEASUREMENTS              8
+
+/* Measurement Mapping */
+#define RPIWD_MEASURE_TEMPERATURE           0
+#define RPIWD_MEASURE_HUMIDITY              1
+
+/* Device query return values */
+#define RPIWD_DEVRETCODE_SUCCESS            0
+#define RPIWD_DEVRETCODE_DEVICE_FAILURE     -1
+#define RPIWD_DEVRETCODE_DATA_FAILURE	    -2
 #define RPIWD_DEVRETCODE_GENERAL_FAILURE	-3
-#define RPIWD_DEVRETCODE_MEMORY_ERROR	-4
-#define RPIWD_DEVRETCODE_UNIT_ERROR	-5
+#define RPIWD_DEVRETCODE_MEMORY_ERROR	    -4
+#define RPIWD_DEVRETCODE_UNIT_ERROR	        -5
 
 #endif /* RPIWD_DEVRETCODES_H */

@@ -27,6 +27,7 @@
 #include "device.h"
 #include "dbhandler.h"
 #include "listener.h"
+#include "trigger.h"
 
 #ifdef RPIWD_DEBUG
 #include <mcheck.h>
@@ -43,6 +44,7 @@ static struct option rpiwd_long_options[] = {
     { "genconfig", no_argument, 0, 'g' },
     { "listdevices", no_argument, 0, 'l' },
     { "foreground", no_argument, 0, 'f'},
+    { "listtriggers", no_argument, 0, 't' },
     { "version", no_argument, 0, 'v' },
     { "help", no_argument, 0, 'h'},
     { 0, 0, 0, 0 }
@@ -59,11 +61,14 @@ static void handle_sigterm(int sig) {
 }
 
 static void handle_exiting(void) {
-    // Close pid file
+    /* Close pid file */
     if (pid_fd != -1) {
         close(pid_fd);
         unlink(PID_FILE);
     }
+
+    /* Quit logging */
+    quit_logging();
 }
 
 void init_sighandling(void) {
@@ -78,6 +83,7 @@ void quit_routine(void) {
 	quit_logging();
 	quit_dbhandler();
 	quit_listener_loop();
+    unload_triggers();
 
 	/* Free memory */
 	free_current_config();
@@ -110,7 +116,7 @@ void help(void) {
 
 void query_loop(void) {
     int slept = 0, retflag, qattempts, ok_flag;
-	float results[2];
+    float results[RPIWD_MAX_MEASUREMENTS];
 
 	/* Query loop */
 	while (1) {
@@ -153,6 +159,9 @@ void query_loop(void) {
 			}
 		}
 
+        /* Execute triggers */
+        trigger_exec_callback(results);
+
 		/* Sleep to wait till the next query time */
 		rpiwd_sleep(rpiwd_units_to_milliseconds(get_current_config()->query_interval));
 
@@ -161,12 +170,13 @@ void query_loop(void) {
 			__hupsignal = 0;
 
 			quit_dbhandler();
-			quit_listener_loop();
+            quit_listener_loop();
+            unload_triggers();
 			init_dbhandler();
 			free_current_config();
 			init_current_config(config_path);
 			init_listener_loop(get_current_config()->num_worker_threads, 
-							   get_current_config()->comm_port);
+                               get_current_config()->comm_port);
 		}
 		else if (__termsignal) { /* SIGTERM = Terminate application (quickly) */
 			quit_routine();
@@ -189,7 +199,7 @@ int main(int argc, char **argv) {
 	version();
 
 	/* Parse arguments */
-    while ((opt = getopt_long(argc, argv, "glfhvc:i", rpiwd_long_options,
+    while ((opt = getopt_long(argc, argv, "tglfhvc:i", rpiwd_long_options,
                               &opt_index)) != -1) {
 		switch (opt) {
 			case 'c': /* Use some custom configuration file */
@@ -234,6 +244,9 @@ int main(int argc, char **argv) {
             case 'f': /* Run in foreground */
                 run_in_foreground = true;
                 break;
+            case 't': /* List triggers */
+                list_triggers();
+                return EXIT_SUCCESS;
 			case 'l': /* List all supported devices */
 				print_supported_device_names();
 				return EXIT_SUCCESS;
@@ -241,10 +254,13 @@ int main(int argc, char **argv) {
 				help();
 				return EXIT_SUCCESS;
 			default: /* Unknown option */
-				fprintf(stderr, "Unknown option '%c'.\n", optopt);
+                fprintf(stderr, "Unknown option '%c'.\n", opt);
 				return EXIT_FAILURE;
 		}
-	}
+    }
+
+    /* Initialize logging */
+    init_logging(run_in_foreground);
 
     /* Initialize wiringPi */
     wiringPiSetup();
@@ -262,6 +278,12 @@ int main(int argc, char **argv) {
     /* Check configuraton */
     if (config_has_errors(get_current_config()) > 0) {
         fprintf(stderr, "%s: error: Configuration errors encountered.\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    /* Load triggers from file */
+    if (load_triggers() != TRIGGER_PARSE_OK) {
+        fprintf(stderr, "%s: error: could not load trigger file.", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -291,7 +313,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    /* Make into daemon */
+   /* Make into daemon */
     if (!run_in_foreground) {
         if (daemon(0, 0) == -1) {
             fprintf(stderr, "%s: error: failed to make into daemon.", argv[0]);
@@ -306,9 +328,6 @@ int main(int argc, char **argv) {
 	
     /* Write the PID file */
     write_pid_file();
-
-	/* Initialize logging */
-    init_logging(run_in_foreground);
 
 	/* Initialize signal handling */
 	init_sighandling();

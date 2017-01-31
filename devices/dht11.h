@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "devretcodes.h"
+#include "devicevals.h"
 #include "confighandler.h"
 
 #define DHT11_MAX_READS 				96
