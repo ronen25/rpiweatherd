@@ -88,47 +88,6 @@ unsigned int rpiwd_units_to_milliseconds(const char *unitstr) {
 	return (unsigned int)seconds;
 }
 
-int rpiwd_units_to_sqlite(const char *unitstr, char *sqlite_unit, float *unit_count) {
-	const char *ptr = unitstr;
-	char unit = '\0';
-	int count = -1;
-
-	/* Iterate until the unit is found, or end of string. */
-	while (isdigit(*ptr) || *ptr == '.' && *ptr != '\0') { ptr++; }
-	if (*ptr)
-		unit = *ptr;
-
-	/* Get count and check it. If it is correct, multiply it by value in seconds */
-	count = strtof(unitstr, NULL);
-	if (errno == ERANGE || count == 0) {
-		free(sqlite_unit);
-		return 0;
-	}
-
-	/* Check unit */
-	switch (unit) {
-		case 's': /* Seconds */
-			sqlite_unit = strdup(SQLITE_UNIT_SECONDS);
-			*unit_count = count;
-			break;
-		case 'm': /* Minutes */
-			sqlite_unit = strdup(SQLITE_UNIT_MINUTES);
-			*unit_count = count;
-			break;
-		case 'h': /* Hours */
-			sqlite_unit = strdup(SQLITE_UNIT_HOURS);
-			*unit_count = count;
-			break;
-		case 'd': /* Days - actual unit is ignored, so it doesn't really matter */
-			sqlite_unit = strdup(SQLITE_UNIT_SECONDS);
-			break;
-		default: /* Unknown / missing */
-			return 0;
-	}
-
-	return 1;
-}
-
 char rpiwd_direction_to_char(const char *direction) {
 	if (strcmp(direction, DIRECTION_STRING_FROM) == 0)
 		return '>';
