@@ -23,6 +23,8 @@
 
 #include <mqueue.h>
 
+#include "confighandler.h" /* __rpiwd_unitstring */
+
 /* Message types */
 #define DB_MSGTYPE_WRITEENTRY   100
 #define DB_MSGTYPE_FETCH		101
@@ -41,19 +43,18 @@
 
 /* DB Thread message structure */
 typedef struct rpiwd_mqmsg_s {
-	int mtype;						/* Operation type */
-	int is_completed;				/* Used by HTTP listener */
-	int sockfd;						/* Client socket to respond to (from HTTP handler) */
-	int retcode;					/* Operation return code (used for logging, etc.) */
-	mqd_t receiver_mq;				/* Reciever queue id (for read requests) */
-    char *fcountq, *fselectq; 		/* Formatted count and selection queries */
-    bool is_conversion_needed;		/* Used for fetch queries to determine whether to
-                                       convert the measurment units used. */
+    int mtype;						      /* Operation type */
+    int is_completed;				      /* Used by HTTP listener */
+    int sockfd;						      /* Client socket to respond to */
+    int retcode;					      /* Operation return code (for logging) */
+    mqd_t receiver_mq;				      /* Reciever queue id (for read requests) */
+    char *fcountq, *fselectq; 		      /* Formatted count and selection queries */
+    char unitstr[RPIWD_MAX_MEASUREMENTS]; /* Measurements unit string; used mainly by the
+                                             JSON-izing callbacks */
 	void *data;
 } rpiwd_mqmsg;
 
 /* Allocating/freeing dbhandler message structures */
-rpiwd_mqmsg *rpiwd_mqmsg_alloc(void);
-void rpiwd_mqmsg_free(rpiwd_mqmsg *ptr, int free_ptr);
+void rpiwd_mqmsg_init(rpiwd_mqmsg *ret);
 
 #endif /* RPIWD_MQMSG_H */

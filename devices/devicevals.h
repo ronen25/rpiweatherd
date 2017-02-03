@@ -17,13 +17,6 @@
 #ifndef RPIWD_DEVRETCODES_H
 #define RPIWD_DEVRETCODES_H
 
-/* Constants */
-#define RPIWD_MAX_MEASUREMENTS              8
-
-/* Measurement Mapping */
-#define RPIWD_MEASURE_TEMPERATURE           0
-#define RPIWD_MEASURE_HUMIDITY              1
-
 /* Device query return values */
 #define RPIWD_DEVRETCODE_SUCCESS            0
 #define RPIWD_DEVRETCODE_DEVICE_FAILURE     -1

@@ -135,7 +135,7 @@ int key_value_list_emplace(key_value_list *list, const char *key, const char *va
 }
 
 /* JSON */
-JSON_Value *entry_to_json_value(entry *ent) {
+JSON_Value *entry_to_json_value(entry *ent, char *unitstr) {
 	char refkey_str[JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE] = { 0 };
 	JSON_Value *rootval = json_value_init_object();
 	JSON_Object *mainobject = json_value_get_object(rootval);
@@ -147,7 +147,10 @@ JSON_Value *entry_to_json_value(entry *ent) {
 	}
 
 	/* First element, simply enough, is the amount of entries  */
-	json_object_set_number(mainobject, "length", 1);
+    json_object_set_number(mainobject, "length", 1);
+
+    /* Append units */
+    append_units(mainobject, unitstr);
 
 	/* Put error code and message */
 	json_object_set_number(mainobject, "errcode", 0);
@@ -185,7 +188,7 @@ JSON_Value *entry_to_json_value(entry *ent) {
 
 /* NOTE: This doesn't use entry_to_json_value because it is
  * slightly faster when doing it the bad old way... */
-JSON_Value *entrylist_to_json_value(entrylist **list) {
+JSON_Value *entrylist_to_json_value(entrylist **list, char *unitstr) {
 	int refkey;
 	char refkey_str[JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE] = { 0 };
 	entrylist *listptr = *list;
@@ -193,7 +196,10 @@ JSON_Value *entrylist_to_json_value(entrylist **list) {
 	JSON_Object *mainobject = json_value_get_object(rootval);
 
 	/* First element, simply enough, is the amount of entries  */
-	json_object_set_number(mainobject, "length", (double)listptr->length);
+    json_object_set_number(mainobject, "length", (double)listptr->length);
+
+    /* Append units */
+    append_units(mainobject, unitstr);
 
 	/* Put error code and message */
 	json_object_set_number(mainobject, "errcode", 0);
@@ -258,3 +264,15 @@ JSON_Value *key_value_list_to_json_value(key_value_list **list) {
 	return rootval;
 }
 
+
+void append_units(JSON_Object *jobj, char *unitstr) {
+    /* Quickly convert the unit characters to a string */
+    char unitbuffer[4];
+    unitbuffer[0] = unitstr[RPIWD_MEASURE_TEMPERATURE];
+    unitbuffer[1] = unitbuffer[3] = '\0';
+    unitbuffer[2] = RPIWD_DEFAULT_HUMID_UNIT;
+
+    /* Apply to JSON object */
+    json_object_dotset_string(jobj, "units.tempunit", unitbuffer);
+    json_object_dotset_string(jobj, "units.humidunit", unitbuffer + 2);
+}

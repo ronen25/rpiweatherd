@@ -19,6 +19,7 @@
 static rpiwd_config __current_configuration;
 static pthread_mutex_t __mtx_config = PTHREAD_MUTEX_INITIALIZER;
 static size_t temp_count;
+static char __rpiwd_unitstring[RPIWD_MAX_MEASUREMENTS];
 
 /* Internal callback */
 int inih_callback(void *info, const char *section, const char *name, const char *value) {
@@ -200,8 +201,16 @@ rpiwd_config *get_current_config(void) {
 int init_current_config(const char *config_path) {
     int flag;
 
-	pthread_mutex_lock(&__mtx_config);
-		flag = parse_config_file(config_path, &__current_configuration);
+    /* Lock to prevent other threads from accessing the configuration while
+     * it is being updated. */
+    pthread_mutex_lock(&__mtx_config);
+        /* Parse/Re-parse configuration file */
+        flag = parse_config_file(config_path, &__current_configuration);
+
+        /* Initialize unit string with the defaults */
+        memset(__rpiwd_unitstring, 0, sizeof(char) * RPIWD_MAX_MEASUREMENTS);
+        __rpiwd_unitstring[RPIWD_MEASURE_TEMPERATURE] = RPIWD_DEFAULT_TEMP_UNIT;
+        __rpiwd_unitstring[RPIWD_MEASURE_HUMIDITY] = RPIWD_DEFAULT_HUMID_UNIT;
 	pthread_mutex_unlock(&__mtx_config);
 
 	return flag;
@@ -211,4 +220,9 @@ void free_current_config(void) {
 	pthread_mutex_lock(&__mtx_config);
 		free_config(&__current_configuration);
 	pthread_mutex_unlock(&__mtx_config);
+}
+
+char *get_unit_string(void) {
+    /* This is read-only to all other modules, so we shouldn't lock this. */
+    return __rpiwd_unitstring;
 }

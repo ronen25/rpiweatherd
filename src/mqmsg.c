@@ -16,19 +16,8 @@
 
 #include "mqmsg.h"
 
-rpiwd_mqmsg *rpiwd_mqmsg_alloc(void) {
-	rpiwd_mqmsg *ret = malloc(sizeof(rpiwd_mqmsg));
-	if (!ret)
-		return NULL;
-
-	ret->fcountq = ret->fselectq = NULL;
-
-	return ret;
+void rpiwd_mqmsg_init(rpiwd_mqmsg *ret) {
+    ret->fcountq = ret->fselectq = NULL;
+    ret->is_completed = 0;
+    memcpy(ret->unitstr, get_unit_string(), sizeof(char) * RPIWD_MAX_MEASUREMENTS);
 }
-
-void rpiwd_mqmsg_free(rpiwd_mqmsg *ptr, int free_ptr) {
-	/* Free both queries if needed */
-	if (free_ptr)
-		free(ptr);
-}
-

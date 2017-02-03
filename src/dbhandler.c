@@ -85,7 +85,8 @@ void quit_db_mq(void) {
 void *db_thread_event_loop(void *unused) {
 	int old;
 	ssize_t res;
-	rpiwd_mqmsg msg_buffer;
+    rpiwd_mqmsg msg_buffer;
+    bool needs_convert;
 
 	/* Initialize thread cancellation and cleanup */
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old);
@@ -111,10 +112,14 @@ void *db_thread_event_loop(void *unused) {
 			/* No need to send anything anywhere so continue here... */
 			continue;
 		}
-		else if (msg_buffer.mtype == DB_MSGTYPE_FETCH) {
+        else if (msg_buffer.mtype == DB_MSGTYPE_FETCH) {
+            /* Check if a conversion is required */
+            needs_convert = msg_buffer.unitstr[RPIWD_MEASURE_TEMPERATURE] ==
+                            RPIWD_TEMPERATURE_CELSIUS ? false : true;
 			/* Execute query */
-			msg_buffer.data = exec_fetch_query(msg_buffer.fcountq, 
-                    msg_buffer.fselectq, msg_buffer.is_conversion_needed,
+            msg_buffer.data = exec_fetch_query(msg_buffer.fcountq,
+                    msg_buffer.fselectq,
+                    needs_convert,
                     &msg_buffer.retcode);
 
 			/* Update statistics */

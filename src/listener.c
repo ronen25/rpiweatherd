@@ -146,10 +146,10 @@ void *main_listener_loop(void *comm_port) {
 		setsockopt(clientsock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, 
 				sizeof(struct timeval));
 
-		/* Build message */
-		msgbuff.is_completed = 0;
-		msgbuff.sockfd = clientsock;
-		msgbuff.receiver_mq = __worker_mqueue;
+        /* Build message */
+        rpiwd_mqmsg_init(&msgbuff);
+        msgbuff.sockfd = clientsock;
+        msgbuff.receiver_mq = __worker_mqueue;
 
 		/* Send to workers queue */
 		mq_send(__worker_mqueue, (const char *)&msgbuff, sizeof(rpiwd_mqmsg), 0);
@@ -222,7 +222,7 @@ void *worker_listener_loop(void *arg) {
 				end_response(msgbuff.sockfd, cmd);
 
 				continue;
-			}
+            }
 
 			/* Dispatch command callback */
 			cmd_status = dispatch_command(cmd, &msgbuff);
@@ -251,10 +251,11 @@ void *worker_listener_loop(void *arg) {
 			/* Check response type, and get value accordingly */
 			switch (msgbuff.mtype) {
 				case DB_MSGTYPE_FETCH:
-					jval = entrylist_to_json_value((entrylist **)&msgbuff.data);
+                    jval = entrylist_to_json_value((entrylist **)&msgbuff.data,
+                                                   msgbuff.unitstr);
 					break;
 				case DB_MSGTYPE_CURRENT:
-					jval = entry_to_json_value((entry *)msgbuff.data);
+                    jval = entry_to_json_value((entry *)msgbuff.data, msgbuff.unitstr);
 					break;
 				case DB_MSGTYPE_STATS:
 				case DB_MSGTYPE_CONFIG:
@@ -264,7 +265,7 @@ void *worker_listener_loop(void *arg) {
 
 			/* If something was received, generate appropriate 
 			 * HTTP response and send to client */
-			if (jval) {
+            if (jval) {
 				/* Serialize and send */
 				char *serialized = json_serialize_to_string(jval);
 
@@ -307,16 +308,10 @@ void *worker_listener_loop(void *arg) {
 				/* Finish response */
 				close(msgbuff.sockfd);
 						
-				/* Free buffers */
-				rpiwd_mqmsg_free(&msgbuff, 0);
-
-				continue;
+                continue;
 			}
 		}
-
-		/* Free buffers */
-		rpiwd_mqmsg_free(&msgbuff, 0);
-	}
+    }
 
 	return (void *) 0;
 }
@@ -394,13 +389,12 @@ int dispatch_command(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	cmd_callback *ptr = &CMD_CALLBACK_TABLE[0];
 
 	while (ptr->cmd_name)
-		if (strcmp(ptr->cmd_name, params->cmdname) == 0)
-			break;
-		else
-			ptr++;
+        if (strcmp(ptr->cmd_name, params->cmdname) != 0)
+            ptr++;
+        else break;
 
-	if (ptr->cmd_name)
-		return ptr->callback(params, msgbuff);
+    if (ptr->cmd_name)
+        return ptr->callback(params, msgbuff);
 	else
 		return CALLBACK_RETCODE_UNKNOWN_COMMAND;
 }
@@ -408,9 +402,9 @@ int dispatch_command(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	time_t from = 0, to = 0, on = 0, temp;
 	http_cmd_param *ptr;
-	char *retval;
+    char *retval;
     int retflag = 0;
-    bool needs_conversion = false, rdtn_performed;
+    bool rdtn_performed;
 
 	/* Point at first argument, if any */
 	if (params->params)
@@ -428,10 +422,20 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 			break;
         }
 
-        if (strcmp(ptr->name, "unit") == 0) {
-            if (ptr->value[0] == CONFIG_UNITS_UNITCHAR_IMPERIAL)
-                needs_conversion = true;
-            else if (ptr->value[0] != CONFIG_UNITS_UNITCHAR_METRIC) {
+        if (strcmp(ptr->name, "tempunit") == 0) {
+            /* Should be one character */
+            if (strlen(ptr->value) == 1)
+                ptr->value[0] = tolower(ptr->value[0]);
+            else {
+                retflag = CALLBACK_RETCODE_PARAM_ERROR;
+                break;
+            }
+
+            /* Check */
+            if (ptr->value[0] == RPIWD_TEMPERATURE_FARENHEIT)
+                msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] =
+                        RPIWD_TEMPERATURE_FARENHEIT;
+            else if (ptr->value[0] != RPIWD_TEMPERATURE_CELSIUS) {
                 /* Unrecognized unit */
                 retflag = CALLBACK_RETCODE_PARAM_ERROR;
                 break;
@@ -497,9 +501,6 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	else 
         return CALLBACK_RETCODE_PARAM_ERROR;
 
-    /* Check conversion required */
-    msgbuff->is_conversion_needed = needs_conversion;
-
 	return retflag;
 }
 
@@ -509,20 +510,35 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	float temp[2];
     int qattempts = 0, qflag;
-    bool conversion_needed = false;
+    bool conversion_needed = msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE]
+                                != RPIWD_TEMPERATURE_CELSIUS;
 
     /* Command should have one/no parameters. */
     if (params->length == 1) {
         http_cmd_param *param = &params->params[0];
-        switch (param->value[0]) {
-            case CONFIG_UNITS_UNITCHAR_IMPERIAL:
-                conversion_needed = true;
+
+        /* Should be one character, so lower it if needed. */
+        if (strlen(param->value) == 1)
+            param->value[0] = tolower(param->value[0]);
+        else
+            return CALLBACK_RETCODE_PARAM_ERROR;
+
+        /* Only valid parameter is 'tempunit' */
+        if (strcmp(param->name, "tempunit") == 0) {
+            /* Check length and lower */
+            switch (param->value[0]) {
+            case RPIWD_TEMPERATURE_FARENHEIT:
+                msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] = RPIWD_TEMPERATURE_FARENHEIT;
                 break;
-            case CONFIG_UNITS_UNITCHAR_METRIC:
+            case RPIWD_TEMPERATURE_CELSIUS:
+                msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] = RPIWD_TEMPERATURE_CELSIUS;
                 break;
             default:
                 return CALLBACK_RETCODE_PARAM_ERROR;
+            }
         }
+        else
+            return CALLBACK_RETCODE_UNKNOWN_PARAM;
     }
     else if (params->length > 1)
         return CALLBACK_RETCODE_TOO_MANY_PARAMS;

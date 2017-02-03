@@ -29,6 +29,7 @@
 #include "ini.h"
 #include "device.h"
 #include "util.h"
+#include "measurevals.h"
 
 #define CONFIG_FILE_DEFAULT_LOCATION 		"/etc/rpiweatherd/rpiweatherd.conf"
 #define CONFIG_FILE_DEFAULT_FOLDER			"/etc/rpiweatherd"
@@ -92,8 +93,7 @@ int init_current_config(const char *config_path);
 rpiwd_config *get_current_config(void);
 void free_current_config(void);
 
-/* Getters/Setters for whether converion is required */
-bool get_conversion_required(void);
-void set_conversion_required(bool is_required);
+/* Getter for the unit string */
+char *get_unit_string(void);
 
 #endif /* RPIWD_CONFIGHANDLER_H */

@@ -36,6 +36,7 @@
 #include "device.h"
 #include "confighandler.h"
 #include "datastructures.h"
+#include "measurevals.h"
 #include "rpiweatherd_config.h"
 
 #define MAX_WORKER_THREADS 				4

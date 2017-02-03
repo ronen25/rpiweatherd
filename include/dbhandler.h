@@ -137,12 +137,14 @@ char *format_query(const char *format, ...);
 
 /* General functions */
 size_t exec_formatted_count_query(const char *count_query);
-entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool convert, int *errcode);
+entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool convert,
+                            int *errcode);
 key_value_list *exec_key_value_query(const char *fcountq, const char *fselectq,
 		int *errcode);
 
 /* Writing/reading functions */
-static int write_raw_entry(float temp, float humid, const char *location, const char *device);
+static int write_raw_entry(float temp, float humid, const char *location,
+                           const char *device);
 static void increase_stat(const char *stat_name);
 
 /* Utility */

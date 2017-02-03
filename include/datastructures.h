@@ -22,6 +22,8 @@
 #include <string.h>
 #include <parson.h>
 
+#include "measurevals.h"
+
 /* Constants */
 #define JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE	32
 
@@ -70,8 +72,9 @@ void key_value_list_free(key_value_list *list);
 int key_value_list_emplace(key_value_list *list, const char *key, const char *value);
 
 /* JSON */
-JSON_Value *entry_to_json_value(entry *ent);
-JSON_Value *entrylist_to_json_value(entrylist **list);
+JSON_Value *entry_to_json_value(entry *ent, char *unitstr);
+JSON_Value *entrylist_to_json_value(entrylist **list, char *unitstr);
 JSON_Value *key_value_list_to_json_value(key_value_list **list);
+void append_units(JSON_Object *jobj, char *unitstr);
 
 #endif /* RPIWD_DATASTRUCTURES_H */

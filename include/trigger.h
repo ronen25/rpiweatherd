@@ -31,7 +31,7 @@
 #include <wiringPi.h>
 
 #include "confighandler.h"
-#include "devicevals.h"
+#include "measurevals.h"
 
 /* Constants */
 #define TRIGGER_FILE_PATH                   "/etc/rpiweatherd/rpiwd_triggers.conf"
