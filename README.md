@@ -87,6 +87,7 @@ I also provide a Qt-based GUI client, developed as a separate project - **[rpiwe
 - [Configuration](https://github.com/ronen25/rpiweatherd/wiki/Dameon-Configuration)
 - [Running the Daemon](https://github.com/ronen25/rpiweatherd/wiki/Running-the-Daemon)
 - [Getting Data](https://github.com/ronen25/rpiweatherd/wiki/Getting-Data)
+- [Triggers](https://github.com/ronen25/rpiweatherd/wiki/Triggers)
 
 ***
 
