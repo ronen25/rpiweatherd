@@ -63,12 +63,12 @@ int dht11_query_callback(int data_pin, float *arr) {
 
 		/* Print to the buffer to later convert it to a float */
 		sprintf(buffer, "%d.%d", data[2], data[3]);
-		arr[0] = atof(buffer);
+        arr[RPIWD_MEASURE_TEMPERATURE] = atof(buffer);
 
 		/* Do the same for the humidity data, right after cleaning the buffer */
 		memset(buffer, 0, DHT11_MAX_RESULT_STRING_LEN);
 		sprintf(buffer, "%d.%d", data[0], data[1]);
-		arr[1] = atof(buffer);
+        arr[RPIWD_MEASURE_HUMIDITY] = atof(buffer);
 	}
 	else
 		return RPIWD_DEVRETCODE_DATA_FAILURE;
