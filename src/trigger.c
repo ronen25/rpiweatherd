@@ -24,7 +24,7 @@ static time_t __rpiwd_trigger_last_update;
 static const struct value_type_mapping_s VALUE_TYPE_MAPPING[] = {
     { "%temp%",         RPIWD_MEASURE_TEMPERATURE },
     { "%humid%",        RPIWD_MEASURE_HUMIDITY },
-    { NULL,             0 }
+    { NULL,             -1 }
 };
 
 static const struct cond_op_to_str_s COND_OP_TO_STR[] = {
@@ -77,15 +77,28 @@ static const struct trigger_parse_error_str_s TRIGGER_PARSE_ERROR_STR[] = {
 { 0, NULL }
 };
 
+static const char TRIGGER_VALUE_VALID_MEASUREMENTS[] = {
+    RPIWD_TEMPERATURE_CELSIUS,
+    RPIWD_TEMPERATURE_FARENHEIT,
+    RPIWD_DEFAULT_HUMID_UNIT,
+    0
+};
+
+static const char TRIGGER_VALUE_VALID_TEMPS[] = {
+    RPIWD_TEMPERATURE_CELSIUS,
+    RPIWD_TEMPERATURE_FARENHEIT,
+    0
+};
+
 /* =================================================================================== */
 
-int parse_cond_type(const char *part, int *value) {
+int parse_cond_type(char **part, int *value) {
     const struct cond_type_to_str_s *ptr = COND_TYPE_TO_STR;
     *value = 0;
 
-    if (part && part[0] == '%' && part[strlen(part) - 1] == '%') {
-        while (ptr->cond_type) {
-            if (strcmp(ptr->str, part) == 0) {
+    if (*part && *part[0] == '%' && (*part)[strlen(*part) - 1] == '%') {
+        while (ptr->str) {
+            if (strcmp(ptr->str, *part) == 0) {
                 *value = ptr->cond_type;
                 break;
             }
@@ -94,16 +107,16 @@ int parse_cond_type(const char *part, int *value) {
         }
     }
 
-    return *value ? TRIGGER_PARSE_OK : TRIGGER_ERROR_VALUE_SYNTAX;
+    return *value != -1 ? TRIGGER_PARSE_OK : TRIGGER_ERROR_VALUE_SYNTAX;
 }
 
-int parse_cond_op(const char *part, int *value) {
+int parse_cond_op(char **part, int *value) {
     const struct cond_op_to_str_s *ptr = COND_OP_TO_STR;
     *value = 0;
 
-    if (part && strlen(part) <= 2) {
+    if (*part && strlen(*part) <= 2) {
         while (ptr->cond_op) {
-            if (strcmp(part, ptr->str) == 0) {
+            if (strcmp(*part, ptr->str) == 0) {
                 *value = ptr->cond_op;
                 break;
             }
@@ -118,10 +131,21 @@ int parse_cond_op(const char *part, int *value) {
     return *value ? TRIGGER_PARSE_OK : TRIGGER_ERROR_COND_OP_SYNTAX;
 }
 
-int parse_cond_value(char *part, float *value) {
-    if (part) {
-        if ((*value = strtod(part, NULL)) != 0 || errno != ERANGE)
+int parse_cond_value(char **part, float *value) {
+    char *endptr;
+
+    if (*part) {
+        if ((*value = strtod(*part, &endptr)) != 0 || errno != ERANGE) {
+            /* Check if there is a suffix.
+             * If there is, advance the part so that parse_cond_value_suffix could
+             * parse that suffix.
+             * If not, leave part as-is and return. */
+            if (*endptr != '\0')
+                *part = endptr;
+
+            /* Return */
             return TRIGGER_PARSE_OK;
+        }
         else
             return TRIGGER_ERROR_MALFORMED_VALUE;
     }
@@ -129,14 +153,29 @@ int parse_cond_value(char *part, float *value) {
         return TRIGGER_ERROR_MISSING_VALUE;
 }
 
-int parse_cond_action(char *part, int *value) {
+int parse_cond_value_suffix(char **part, char *value) {
+    const char *tableptr = TRIGGER_VALUE_VALID_MEASUREMENTS;
+
+    while (*tableptr) {
+        if (*tableptr == *part[0]) {
+            *value = *tableptr;
+            return TRIGGER_PARSE_OK;
+        }
+
+        tableptr++;
+    }
+
+    return TRIGGER_PARSE_OK;
+}
+
+int parse_cond_action(char **part, int *value) {
     int i = 0;
-    char *ptr = part;
+    char *ptr = *part;
     const struct cond_action_to_str_s *action_ptr = COND_ACTION_TO_STR;
 
     *value = 0;
 
-    if (part) {
+    if (*part) {
         /* Make everything lowercase */
         while (*ptr) {
             if (isupper(*ptr))
@@ -147,7 +186,7 @@ int parse_cond_action(char *part, int *value) {
 
         /* Check action */
         while (action_ptr->cond_action) {
-            if (strcmp(part, action_ptr->str) == 0) {
+            if (strcmp(*part, action_ptr->str) == 0) {
                 *value = action_ptr->cond_action;
                 break;
             }
@@ -183,19 +222,23 @@ int parse_trigger(rpiwd_trigger *trig, FILE **f) {
         return TRIGGER_PARSE_COMMENT_LINE;
     }
     else
-        TRY_PARSE(flag, parse_cond_type, part, int, &trig->val_type);
+        TRY_PARSE(flag, parse_cond_type, &part, int, &trig->val_type);
 
     /* Op */
     part = strtok_r(NULL, " \t", &saveptr);
-    TRY_PARSE(flag, parse_cond_op, part, int, &trig->op);
+    TRY_PARSE(flag, parse_cond_op, &part, int, &trig->op);
 
     /* Actual value */
     part = strtok_r(NULL, " \t", &saveptr);
-    TRY_PARSE(flag, parse_cond_value, part, float, &trig->cond_value);
+    TRY_PARSE(flag, parse_cond_value, &part, float, &trig->cond_value);
+
+    /* Parse value suffix, if there is any */
+    if (part != '\0')
+        TRY_PARSE(flag, parse_cond_value_suffix, &part, char, &trig->value_unit);
 
     /* Action */
     part = strtok_r(NULL, " \t", &saveptr);
-    TRY_PARSE(flag, parse_cond_action, part, int, &trig->action);
+    TRY_PARSE(flag, parse_cond_action, &part, int, &trig->action);
 
     /* Path */
     part = strtok_r(NULL, " \t", &saveptr);
@@ -310,6 +353,7 @@ int post_process_args(const char *arg_string, char *buffer, float **measurements
     const struct value_type_mapping_s *mapping_ptr = VALUE_TYPE_MAPPING;
     const char *part_ptr, *begin = arg_string;
     size_t appended = 0, copy_len, part_len;
+    float converted_value;
 
     /* If there are no percent signs, no point in post-processing */
     if (!strchr(arg_string, '%'))
@@ -370,6 +414,9 @@ int post_process_args(const char *arg_string, char *buffer, float **measurements
 
 int trigger_should_execute(rpiwd_trigger *trig, float **measurements) {
     int cond_eval = 0;
+
+    /* Convert measurements to properly evaluate the condition */
+    convert_measurements_maybe(trig, measurements);
 
     /* Evaluate the condition */
     switch (trig->op) {
@@ -482,6 +529,16 @@ int trigger_exec_callback(float *measurements) {
     }
 }
 
+void convert_measurements_maybe(const rpiwd_trigger *trig, float **measurements) {
+    /* Check if we need to convert the temperature (i.e. if there is a temperature
+     * suffix and it's not c or C. */
+    if (trig->val_type == TRIGGER_TYPE_TEMP &&
+        trig->value_unit != RPIWD_TEMPERATURE_CELSIUS && trig->value_unit != '\0') {
+        (* measurements)[RPIWD_MEASURE_TEMPERATURE] =
+            (* measurements)[RPIWD_MEASURE_TEMPERATURE] * 1.8f + 32;
+    }
+}
+
 const size_t max_allowed_argstring_length(void) {
     size_t len = 0;
     const struct value_type_mapping_s *mapping_ptr = VALUE_TYPE_MAPPING;
@@ -529,3 +586,4 @@ const char *cond_type_to_str(int type) {
 
     return "UNKN";
 }
+

@@ -37,27 +37,35 @@
 #define TRIGGER_FILE_PATH                   "/etc/rpiweatherd/rpiwd_triggers.conf"
 #define TRIGGER_ARG_STRING_MAX_LENGTH       2049    /* 2048 + '\0' */
 
-/* Error codes */
-#define TRIGGER_PARSE_OK                    0
-#define TRIGGER_PARSE_COMMENT_LINE          1
-#define TRIGGER_ERROR_FILE_NOT_FOUND        2
-#define TRIGGER_ERROR_FILE_ERROR            3
-#define TRIGGER_ERROR_UP_TO_DATE            4
-#define TRIGGER_ERROR_EOF                   5
-#define TRIGGER_ERROR_VALUE_SYNTAX          6
-#define TRIGGER_ERROR_VALUE_TYPE_ERROR      7
-#define TRIGGER_ERROR_COND_OP_SYNTAX        8
-#define TRIGGER_ERROR_COND_UNKNOWN_OP       9
-#define TRIGGER_ERROR_MALFORMED_VALUE       10
-#define TRIGGER_ERROR_MISSING_VALUE         11
-#define TRIGGER_ERROR_UNKNOWN_ACTION        12
-#define TRIGGER_ERROR_MISSING_ACTION        13
-#define TRIGGER_ERROR_TARGET_MALFORMED      14
-#define TRIGGER_ERROR_TARGET_NOT_NUMERIC    15
-#define TRIGGER_ERROR_MISSING_ARGS          16
-#define TRIGGER_ERROR_ARGUMENTS_NOT_NEEDED  17
-#define TRIGGER_ERROR_MISSING_TARGET        18
-#define TRIGGER_ERROR_OUT_OF_MEMORY         19
+/* Error codes
+ * 1xx - Internal errors
+ * 2xx - File errors
+ * 3xx - Value errors
+ * 4xx - Condition errors
+ * 5xx - Action errors
+ * 6xx - Target errors
+ * 7xx - Argument errors */
+#define TRIGGER_PARSE_OK                    100
+#define TRIGGER_PARSE_COMMENT_LINE          101
+#define TRIGGER_ERROR_FILE_NOT_FOUND        201
+#define TRIGGER_ERROR_FILE_ERROR            202
+#define TRIGGER_ERROR_UP_TO_DATE            102
+#define TRIGGER_ERROR_EOF                   103
+#define TRIGGER_ERROR_VALUE_SYNTAX          301
+#define TRIGGER_ERROR_VALUE_UNIT            302
+#define TRIGGER_ERROR_VALUE_TYPE_ERROR      303
+#define TRIGGER_ERROR_COND_OP_SYNTAX        401
+#define TRIGGER_ERROR_COND_UNKNOWN_OP       402
+#define TRIGGER_ERROR_MALFORMED_VALUE       304
+#define TRIGGER_ERROR_MISSING_VALUE         305
+#define TRIGGER_ERROR_UNKNOWN_ACTION        501
+#define TRIGGER_ERROR_MISSING_ACTION        502
+#define TRIGGER_ERROR_TARGET_MALFORMED      601
+#define TRIGGER_ERROR_TARGET_NOT_NUMERIC    602
+#define TRIGGER_ERROR_MISSING_ARGS          701
+#define TRIGGER_ERROR_ARGUMENTS_NOT_NEEDED  702
+#define TRIGGER_ERROR_MISSING_TARGET        603
+#define TRIGGER_ERROR_OUT_OF_MEMORY         104
 
 /* Trigger value type */
 #define TRIGGER_TYPE_TEMP                   1
@@ -92,7 +100,7 @@
 typedef struct rpiwd_trigger_s {
     int val_type, op, action;
     float cond_value;
-    char *target, *args;
+    char *target, *args, value_unit;
 } rpiwd_trigger;
 
 /* Structures for tables */
@@ -122,10 +130,11 @@ struct trigger_parse_error_str_s {
 };
 
 /* Trigger parsing and loading */
-int parse_cond_action(char *part, int *value);
-int parse_cond_value(char *part, float *value);
-int parse_cond_op(const char *part, int *value);
-int parse_cond_type(const char *part, int *value);
+int parse_cond_action(char **part, int *value);
+int parse_cond_value(char **part, float *value);
+int parse_cond_value_suffix(char **part, char *value);
+int parse_cond_op(char **part, int *value);
+int parse_cond_type(char **part, int *value);
 
 int load_triggers(void);
 void unload_triggers(void);
@@ -142,6 +151,7 @@ const char *cond_action_to_str(int action);
 const char *cond_type_to_str(int type);
 
 /* Helpers */
+void convert_measurements_maybe(const rpiwd_trigger *trig, float **measurements);
 void list_triggers(void);
 const size_t max_allowed_argstring_length(void);
 

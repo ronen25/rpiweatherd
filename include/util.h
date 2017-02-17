@@ -82,4 +82,7 @@ int rpiwd_file_exists(const char *path);
 /* Conversion Helpers */
 int rpiwd_is_number(const char *str);
 
+#define RPIWD_CELSIUS_TO_FARENHEIT(var) \
+    ((var) = ((var) * 9 / 5 + 32))
+
 #endif /* RPIWD_UTIL_H */

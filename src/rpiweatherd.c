@@ -155,7 +155,10 @@ void query_loop(void) {
 			}
 		}
 
-        /* Execute triggers */
+        /* Execute triggers
+         * Note: Measurements may be converted for trigger condition evaluation.
+         * The measurements are basically useless to the daemon after they were
+         * written to the database, so it doesn't really matter. */
         trigger_exec_callback(results);
 
 		/* Sleep to wait till the next query time */

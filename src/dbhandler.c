@@ -297,8 +297,7 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool conv
             /* Fetch temperature and then check if a conversion is required. */
             list->entries[i].temperature = sqlite3_column_double(query, 2);
             if (convert)
-                list->entries[i].temperature =
-                        list->entries[i].temperature * 9 / 5 + 32;
+                RPIWD_CELSIUS_TO_FARENHEIT(list->entries[i].temperature);
 
 			/* Increment i */
 			i++;

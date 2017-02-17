@@ -510,8 +510,7 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	float temp[2];
     int qattempts = 0, qflag;
-    bool conversion_needed = msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE]
-                                != RPIWD_TEMPERATURE_CELSIUS;
+    bool conversion_needed;
 
     /* Command should have one/no parameters. */
     if (params->length == 1) {
@@ -549,8 +548,10 @@ int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
         qattempts++;
 
         /* Check if conversion is needed */
+        conversion_needed = msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] !=
+                            RPIWD_TEMPERATURE_CELSIUS;
         if (qflag == RPIWD_DEVRETCODE_SUCCESS && conversion_needed)
-            temp[0] = temp[0] * 9 / 5 + 32; /* Convert to F */
+            RPIWD_CELSIUS_TO_FARENHEIT(temp[0]);
 	} while (qflag != RPIWD_DEVRETCODE_SUCCESS && qattempts < CONFIG_MAX_QUERY_ATTEMPTS);
 
 	/* Check whether query has been successful */
