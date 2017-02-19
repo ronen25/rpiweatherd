@@ -38,7 +38,7 @@ typedef struct entry_s {
 
 /* Entry list structure */
 typedef struct entrylist_s {
-	size_t length;
+    size_t size, capacity;
 	entry *entries;
 } entrylist;
 
@@ -58,7 +58,7 @@ entry *entry_alloc(void);
 void entry_free(entry *ent);
 void entry_ptr_free(entry *ent);
 
-entrylist *entrylist_alloc(size_t max_items);
+entrylist *entrylist_alloc(size_t capacity);
 void entrylist_free(entrylist *listptr);
 
 /* Allocating/freeing generic key/value lists 

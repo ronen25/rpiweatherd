@@ -59,6 +59,7 @@
 #define CALLBACK_RETCODE_NO_PARAMS_NEEDED	-6
 #define CALLBACK_RETCODE_MEMORY_ERROR		-7
 #define CALLBACK_RETCODE_DEVICE_ERROR		-8
+#define CALLBACK_RETCODE_DUPLICATE_PARAMS   -9
 
 /* Command callback structure */
 typedef struct cmd_callback_s {

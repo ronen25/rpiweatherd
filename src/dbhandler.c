@@ -268,19 +268,22 @@ size_t exec_formatted_count_query(const char *count_query) {
 entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool convert,
                             int *errcode) {
 	size_t count = exec_formatted_count_query(fcountq);
-	entrylist *list = entrylist_alloc(count);
+    entrylist *list;
 	sqlite3_stmt *query;
-	int rc, i = 0;
+    int rc, i = 0;
+
+    /* Check list count */
+    if (count > DBHANDLER_MAX_FETCHED_ENTRIES) {
+        *errcode = DBHANDLER_ERROR_TOO_MANY_ENTRIES;
+        return NULL;
+    }
+
+    /* Allocate list */
+    list = entrylist_alloc(count);
 
 	/* Check list allocation */
 	if (!list)
 		return NULL;
-
-	/* Check list count */
-	if (count > DBHANDLER_MAX_FETCHED_ENTRIES) {
-		*errcode = DBHANDLER_ERROR_TOO_MANY_ENTRIES;
-		return NULL;
-	}
 
 	/* Prepare query */
 	rc = sqlite3_prepare_v2(db, fselectq, -1, &query, 0);
@@ -301,12 +304,19 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool conv
 
 			/* Increment i */
 			i++;
-		}
+        }
+
+        /* Set list eventual size */
+        list->size = i;
 	}
 	else {
 		/* Log error */
-        rpiwd_log(LOG_ERR, "Error retrieving entries by date: %s", sqlite3_errmsg(db));
-		*errcode = DBHANDLER_ERROR_SQL_ERROR;
+        rpiwd_log(LOG_ERR, "Error retrieving entries: %s", sqlite3_errmsg(db));
+        *errcode = DBHANDLER_ERROR_SQL_ERROR;
+
+        /* Reset list */
+        entrylist_free(list);
+        return NULL;
 	}
 
 	sqlite3_finalize(query);

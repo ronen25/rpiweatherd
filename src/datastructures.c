@@ -39,11 +39,11 @@ void entry_ptr_free(entry *ent) {
 	free(ent);
 }
 
-entrylist *entrylist_alloc(size_t size) {
+entrylist *entrylist_alloc(size_t capacity) {
 	entrylist *entp = NULL;
 
 	/* Check size */
-	if (size < 0)
+    if (capacity < 0)
 		return NULL;
 
 	/* Allocate list pointer */
@@ -52,14 +52,16 @@ entrylist *entrylist_alloc(size_t size) {
 		return NULL;
 
 	/* Allocate array */
-	entp->entries = malloc(sizeof(entry) * size);
+    entp->entries = malloc(sizeof(entry) * capacity);
 	if (!entp->entries) {
 		free(entp);
 		return NULL;
 	}
 
-	/* Put size */
-	entp->length = size;
+    /* Put size as capacity.
+     * Actual size will be zero for now. */
+    entp->capacity = capacity;
+    entp->size = 0;
 
 	return entp;
 }
@@ -68,7 +70,7 @@ void entrylist_free(entrylist *listptr) {
 	int i = 0;
 
 	/* Free every entry's stuff */
-	for (i = 0; i < listptr->length; i++)
+    for (i = 0; i < listptr->size; i++)
 		entry_free(&(listptr->entries[i]));
 
 	/* Free entry array and entry list pointer */
@@ -191,12 +193,18 @@ JSON_Value *entry_to_json_value(entry *ent, char *unitstr) {
 JSON_Value *entrylist_to_json_value(entrylist **list, char *unitstr) {
 	int refkey;
 	char refkey_str[JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE] = { 0 };
-	entrylist *listptr = *list;
+    entrylist *listptr = *list;
+
+    /* Check list */
+    if (!listptr)
+        return NULL;
+
+    /* Initialize JSON objects */
 	JSON_Value *rootval = json_value_init_object();
 	JSON_Object *mainobject = json_value_get_object(rootval);
 
 	/* First element, simply enough, is the amount of entries  */
-    json_object_set_number(mainobject, "length", (double)listptr->length);
+    json_object_set_number(mainobject, "length", (double)listptr->size);
 
     /* Append units */
     append_units(mainobject, unitstr);
@@ -206,7 +214,7 @@ JSON_Value *entrylist_to_json_value(entrylist **list, char *unitstr) {
 	json_object_set_string(mainobject, "errmsg", "");
 
 	/* Iterate through all elements and JSON-ify them */
-	for (int i = 0; i < listptr->length; i++) {
+    for (int i = 0; i < listptr->size; i++) {
 		refkey = listptr->entries[i].id;
 
 		/* Print ID */
