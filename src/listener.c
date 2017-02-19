@@ -403,7 +403,7 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	time_t from = 0, to = 0, on = 0, temp;
 	http_cmd_param *ptr;
     char *retval;
-    int retflag = 0;
+    int retflag = 0, select = 0;
     bool rdtn_performed;
 
 	/* Point at first argument, if any */
@@ -458,6 +458,11 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
             else if (strcmp(ptr->name, "on") == 0)
                 on = temp;
         }
+        else if (strcmp(ptr->name, "select") == 0) {
+            select = strtol(ptr->value, NULL, 10);
+            if (errno == ERANGE || select < 0)
+                return CALLBACK_RETCODE_PARAM_ERROR;
+        }
         else {
             retflag = CALLBACK_RETCODE_UNKNOWN_PARAM;
             break;
@@ -471,25 +476,26 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	/* Build SQL queries */
 	msgbuff->mtype = DB_MSGTYPE_FETCH;
 
-    /* Check date range parameters */
-	if (from && !to && !on) {
+    /* Check date range parameters
+     * TODO: This is pretty ugly. Replace this in the future. */
+    if (from && !to && !on && !select) {
 		/* Use "BY_DATE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE, '>', difftime(from, 0));
 		msgbuff->fselectq = format_query(SQLCMD_READ_BY_DATE, '>', difftime(from, 0));
 	}
-	else if (from && to && !on) {
+    else if (from && to && !select && !on) {
 		/* Use "BY_DATE_RANGE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE_RANGE, difftime(from, 0),
 			   	difftime(to, 0));
 		msgbuff->fselectq = format_query(SQLCMD_READ_BY_DATE_RANGE, difftime(from, 0),
 			   	difftime(to, 0));
 	}
-	else if (!from && to && !on) {
+    else if (!from && to && !select && !on) {
 		/* Use "BY_DATE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE, '<', difftime(to, 0));
 		msgbuff->fselectq = format_query(SQLCMD_READ_BY_DATE, '<', difftime(to, 0));
 	}
-	else if (!from && !to && on) {
+    else if (!from && !to && !select && on) {
 		/* Use "BY_DATE_RANGE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE_RANGE, 
 				difftime(DAY_START(on), 0),
@@ -498,6 +504,10 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 				difftime(DAY_START(on), 0),
 			   	difftime(DAY_END(on), 0));
 	}
+    else if (!from && !to && !on && select > 0) {
+        msgbuff->fcountq = format_query(SQLCMD_COUNT_SELECT_N, select);
+        msgbuff->fselectq = format_query(SQLCMD_SELECT_N, select);
+    }
 	else 
         return CALLBACK_RETCODE_PARAM_ERROR;
 

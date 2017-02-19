@@ -116,6 +116,12 @@ static const char *SQLCMD_COUNT_BY_DATE_RANGE =
         "datetime(%f, 'unixepoch', 'localtime') " \
         "AND datetime(%f, 'unixepoch', 'localtime');";
 
+static const char *SQLCMD_SELECT_N =
+        "SELECT * FROM tblData LIMIT %d;";
+
+static const char *SQLCMD_COUNT_SELECT_N =
+        "SELECT %d;";
+
 /* POSIX message queue ID for the DB thread */
 mqd_t __db_mqd;
 
