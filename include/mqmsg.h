@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,11 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
 #include <mqueue.h>
+
+#include "confighandler.h" /* __rpiwd_unitstring */
 
 /* Message types */
 #define DB_MSGTYPE_WRITEENTRY   100
@@ -39,17 +43,18 @@
 
 /* DB Thread message structure */
 typedef struct rpiwd_mqmsg_s {
-	int mtype;						/* Operation type */
-	int is_completed;				/* Used by HTTP listener */
-	int sockfd;						/* Client socket to respond to (from HTTP handler) */
-	int retcode;					/* Operation return code (used for logging, etc.) */
-	mqd_t receiver_mq;				/* Reciever queue id (for read requests) */
-	char *fcountq, *fselectq; 		/* Formatted count and selection queries */
+    int mtype;						      /* Operation type */
+    int is_completed;				      /* Used by HTTP listener */
+    int sockfd;						      /* Client socket to respond to */
+    int retcode;					      /* Operation return code (for logging) */
+    mqd_t receiver_mq;				      /* Reciever queue id (for read requests) */
+    char *fcountq, *fselectq; 		      /* Formatted count and selection queries */
+    char unitstr[RPIWD_MAX_MEASUREMENTS]; /* Measurements unit string; used mainly by the
+                                             JSON-izing callbacks */
 	void *data;
 } rpiwd_mqmsg;
 
 /* Allocating/freeing dbhandler message structures */
-rpiwd_mqmsg *rpiwd_mqmsg_alloc(void);
-void rpiwd_mqmsg_free(rpiwd_mqmsg *ptr, int free_ptr);
+void rpiwd_mqmsg_init(rpiwd_mqmsg *ret);
 
 #endif /* RPIWD_MQMSG_H */

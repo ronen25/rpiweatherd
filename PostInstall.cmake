@@ -1,6 +1,6 @@
 # 
 # rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
-# Copyright (C) 2016 Ronen Lapushner
+# Copyright (C) 2016-2017 Ronen Lapushner
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,14 +20,20 @@ execute_process(COMMAND "python3" "${CMAKE_CURRENT_LIST_DIR}/deps/FindInitSystem
 string(REPLACE "\n" "" INIT_SYS_NAME "${INIT_SYS_NAME}")
 
 if (INIT_SYS_NAME STREQUAL "sysv" OR INIT_SYS_NAME STREQUAL "upstart")
-	file(INSTALL ${CMAKE_CURRENT_LIST_DIR}/initscripts/rpiweatherd DESTINATION /etc/init.d/rpiweatherd
+	file(INSTALL ${CMAKE_CURRENT_LIST_DIR}/skel/initscripts/rpiweatherd DESTINATION /etc/init.d/rpiweatherd
 		FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ)
-	message("Installed sysv/upstart init script.")
 elseif (INIT_SYS_NAME STREQUAL "systemd")
-	file(INSTALL ${CMAKE_CURRENT_LIST_DIR}/initscripts/rpiweatherd.service 
+	file(INSTALL ${CMAKE_CURRENT_LIST_DIR}/skel/initscripts/rpiweatherd.service 
 		DESTINATION /etc/systemd/system/)
-	message("Installed systemd unit file.")
 else()
 	message("Unknown/unsupported init system: ${INIT_SYS_NAME}")
 	message("No daemon automation file will be installed!")
 endif ()
+
+# Install a blank configuration file
+file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/skel/rpiweatherd.conf"
+     DESTINATION "/etc/rpiweatherd/")
+
+# Install the trigger file
+file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/skel/rpiwd_triggers.conf"
+     DESTINATION "/etc/rpiweatherd")

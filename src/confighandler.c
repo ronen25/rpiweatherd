@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,19 @@
 static rpiwd_config __current_configuration;
 static pthread_mutex_t __mtx_config = PTHREAD_MUTEX_INITIALIZER;
 static size_t temp_count;
+static char __rpiwd_unitstring[RPIWD_MAX_MEASUREMENTS];
 
 /* Internal callback */
 int inih_callback(void *info, const char *section, const char *name, const char *value) {
-	rpiwd_config *confstrct = (rpiwd_config *)info;
+    rpiwd_config *confstrct = (rpiwd_config *)info;
+
+    /* Check if value has any content.
+     * All values in the configuration must have values. */
+    if (!*value) {
+        fprintf(stderr, "\nERROR: configuration key '%s' is missing a value.\n",
+                name);
+        return 0;
+    }
 
 	/* Get query interval */
 	if (strcmp(name, CONFIG_LOCATION) == 0) /* Measurement location */
@@ -37,8 +46,10 @@ int inih_callback(void *info, const char *section, const char *name, const char 
 		if (errno == ERANGE)
 			return CONFIG_ERROR_DEVICE_CONFIG; /* Configuration error */
 	}
-	else if (strcmp(name, CONFIG_UNITS) == 0) /* Default measurement units */
-		confstrct->units = strdup(value);
+    else if (strcmp(name, CONFIG_UNITS) == 0) {/* Default measurement units */
+        fprintf(stderr, "\nWarning: \'units\' setting has been deprecated " \
+                "in version 1.1, and will be ignored.");
+    }
 	else if (strcmp(name, CONFIG_COMM_PORT) == 0) /* Default communication port */ {
 		confstrct->comm_port = strtol(value, NULL, 10);
 		if (errno == ERANGE)
@@ -48,7 +59,7 @@ int inih_callback(void *info, const char *section, const char *name, const char 
 		confstrct->num_worker_threads = strtol(value, NULL, 10);
 		if (errno == ERANGE)
 			return CONFIG_ERROR_NUM_WTHREADS; /* Configuration error */
-	}
+    }
 	else
 		return 0; /* Unknown section, name or error */
 
@@ -71,7 +82,6 @@ int write_config_file(const char *path, rpiwd_config *confstrct) {
 	/* Write general configuration */
 	fprintf(f, "[General]\n");
 	fprintf(f, "%s=%s\n", CONFIG_LOCATION, confstrct->measure_location);
-	fprintf(f, "%s=%s\n", CONFIG_UNITS, confstrct->units);
 	fprintf(f, "%s=%s\n", CONFIG_QUERY_INTERVAL, confstrct->query_interval);
 
 	/* Write device configuration */
@@ -105,9 +115,6 @@ void free_config(rpiwd_config *confstrct) {
 	if (confstrct->measure_location)
 		free(confstrct->measure_location);
 
-	if (confstrct->units)
-		free(confstrct->units);
-
 	if (confstrct->device_name)
 		free(confstrct->device_name);
 
@@ -118,31 +125,14 @@ void free_config(rpiwd_config *confstrct) {
 }
 
 int generate_blank_config(const char *path) {
-	rpiwd_config defconf;
-	int write_flag, status;
+    /* Attempt to copy the blank configuration file in /etc/rpiweatherd/skel */
+    int status = rpiwd_copyfile(CONFIG_BLANK_FILE_LOCATION, path);
+    if (!status) {
+        perror("rpiwd_copyfle");
+        return -1;
+    }
 
-	/* Generate a configuration structure that contains only default values */
-	defconf.measure_location = defconf.device_name = NULL;
-	defconf.units = strdup(CONFIG_UNITS_DEFAULT);
-	defconf.query_interval = strdup(CONFIG_QUERY_INTERVAL_DEFAULT);
-	defconf.comm_port = CONFIG_COMM_PORT_DEFAULT;
-	defconf.num_worker_threads = CONFIG_NUM_WORKER_THREADS_DEFAULT;
-	defconf.device_config = 0;
-
-	/* Create the folder if needed */
-	status = mkdir(CONFIG_FILE_DEFAULT_FOLDER, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	if (status < 0)
-		perror("mkdir");
-
-	/* Write this configuration */
-	if (write_config_file(path, &defconf) == -1) {
-		free_config(&defconf);
-		return -1;
-	}
-
-	/* Free and return */
-	free_config(&defconf);
-	return 0;
+    return 1;
 }
 
 /* A configuration checker */
@@ -154,14 +144,6 @@ int config_has_errors(rpiwd_config *confstrct) {
 	if (!confstrct->measure_location) {
 		flag++;
 		fprintf(stderr, "\nconfiguration error: Measurement location not set.");
-	}
-
-	/* Check units if metric or imperial. */
-	if (strcmp(confstrct->units, CONFIG_UNITS_METRIC) != 0 &&
-			strcmp(confstrct->units, CONFIG_UNITS_IMPERIAL) != 0) {
-		flag++;
-		fprintf(stderr, "\nconfiguration error: Unrecognized unit specifier \"%s\"",
-				confstrct->units);
 	}
 
 	/* Check if device name is supported */
@@ -217,10 +199,18 @@ rpiwd_config *get_current_config(void) {
 }
 
 int init_current_config(const char *config_path) {
-	int flag;
+    int flag;
 
-	pthread_mutex_lock(&__mtx_config);
-		flag = parse_config_file(config_path, &__current_configuration);
+    /* Lock to prevent other threads from accessing the configuration while
+     * it is being updated. */
+    pthread_mutex_lock(&__mtx_config);
+        /* Parse/Re-parse configuration file */
+        flag = parse_config_file(config_path, &__current_configuration);
+
+        /* Initialize unit string with the defaults */
+        memset(__rpiwd_unitstring, 0, sizeof(char) * RPIWD_MAX_MEASUREMENTS);
+        __rpiwd_unitstring[RPIWD_MEASURE_TEMPERATURE] = RPIWD_DEFAULT_TEMP_UNIT;
+        __rpiwd_unitstring[RPIWD_MEASURE_HUMIDITY] = RPIWD_DEFAULT_HUMID_UNIT;
 	pthread_mutex_unlock(&__mtx_config);
 
 	return flag;
@@ -230,4 +220,9 @@ void free_current_config(void) {
 	pthread_mutex_lock(&__mtx_config);
 		free_config(&__current_configuration);
 	pthread_mutex_unlock(&__mtx_config);
+}
+
+char *get_unit_string(void) {
+    /* This is read-only to all other modules, so we shouldn't lock this. */
+    return __rpiwd_unitstring;
 }

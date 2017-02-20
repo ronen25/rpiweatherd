@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,30 +21,30 @@ static pthread_t __db_thread_pid;
 
 int init_dbhandler(void) {
 	int result = 0;
-	struct mq_attr attr;
+    struct mq_attr attr;
+    const char **sqlcmd = SQLCMD_TABLE_CREATION_QUERIES;
 
 	/* Open the database, or create it. */
 	result = sqlite3_open(DB_DEFAULT_FILE_PATH, &db);
 	if (result != SQLITE_OK) {
-		syslog(LOG_ERR, "error: Can't open SQLite database: %s",
-				sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "error: Can't open SQLite database: %s",
+                  sqlite3_errmsg(db));
 		return -1;
 	}
 
-	/* Create the data table if it does not exist yet */
-	result += sqlite3_exec(db, SQLCMD_CREATE_DATA_TABLE_IF_NOT_EXISTS, NULL, NULL, NULL);
-
-	/* Create the stats table if it doesn't exist. */
-	result += sqlite3_exec(db, SQLCMD_CREATE_STATS_TABLE_IF_NOT_EXISTS, NULL, NULL, 
-			NULL);
+    /* Create all data tables */
+    while (*sqlcmd) {
+        result += sqlite3_exec(db, *sqlcmd, NULL, NULL, NULL);
+        sqlcmd++;
+    }
 
 	/* Write initial values to that table, only if it does not exist! */
 	result += sqlite3_exec(db, SQLCMD_INSERT_INITIAL_STATS, NULL, NULL, NULL);
 
 	/* Check if all operations are sucessful */
 	if (result != SQLITE_OK) {
-		syslog(LOG_ERR, "error when creating/opening database file: %s", 
-				sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "error when creating/opening database file: %s",
+                  sqlite3_errmsg(db));
 
 		sqlite3_close(db);
 		return -1;
@@ -56,14 +56,14 @@ int init_dbhandler(void) {
 	attr.mq_msgsize = MQ_MAXMSGSIZE;
 	__db_mqd = mq_open(RPIWD_DB_MQ_NAME, O_CREAT | O_RDWR, 0666, &attr);
 	if (__db_mqd == (mqd_t) -1) {
-		syslog(LOG_ERR, "error: mq_open: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "error: mq_open: %s", strerror(errno));
 		return -1;
 	}
 
 	/* Initialize DB thread */
 	result = pthread_create(&__db_thread_pid, NULL, db_thread_event_loop, NULL);
 	if (result != 0)
-		syslog(LOG_ERR, "error: pthread_create: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "error: pthread_create: %s", strerror(errno));
 
 	/* DONE! */
 	return 1;
@@ -85,7 +85,8 @@ void quit_db_mq(void) {
 void *db_thread_event_loop(void *unused) {
 	int old;
 	ssize_t res;
-	rpiwd_mqmsg msg_buffer;
+    rpiwd_mqmsg msg_buffer;
+    bool needs_convert;
 
 	/* Initialize thread cancellation and cleanup */
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old);
@@ -111,10 +112,15 @@ void *db_thread_event_loop(void *unused) {
 			/* No need to send anything anywhere so continue here... */
 			continue;
 		}
-		else if (msg_buffer.mtype == DB_MSGTYPE_FETCH) {
+        else if (msg_buffer.mtype == DB_MSGTYPE_FETCH) {
+            /* Check if a conversion is required */
+            needs_convert = msg_buffer.unitstr[RPIWD_MEASURE_TEMPERATURE] ==
+                            RPIWD_TEMPERATURE_CELSIUS ? false : true;
 			/* Execute query */
-			msg_buffer.data = exec_fetch_query(msg_buffer.fcountq, 
-					msg_buffer.fselectq, &msg_buffer.retcode);
+            msg_buffer.data = exec_fetch_query(msg_buffer.fcountq,
+                    msg_buffer.fselectq,
+                    needs_convert,
+                    &msg_buffer.retcode);
 
 			/* Update statistics */
 			increase_stat(STAT_NAME_TOTAL_REQUESTS);
@@ -175,8 +181,7 @@ static int write_raw_entry(float temp, float humid, const char *location, const 
 	int rc;
 
 	/* Prepare query */
-	char *qString = SQLCMD_WRITE_ENTRY;
-	rc = sqlite3_prepare_v2(db, qString, -1, &query, 0);
+    rc = sqlite3_prepare_v2(db, SQLCMD_WRITE_ENTRY, -1, &query, 0);
 	if (rc == SQLITE_OK) {
 		/* Bind parameters */
 		sqlite3_bind_double(query, 1, temp);
@@ -186,13 +191,13 @@ static int write_raw_entry(float temp, float humid, const char *location, const 
 	}
 	else {
 		/* Log error */
-		syslog(LOG_ERR, "Error with preperation of statement: %s", sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "Error with preperation of statement: %s", sqlite3_errmsg(db));
 	}
 
 	/* Get result */
 	rc = sqlite3_step(query);
 	if (rc != SQLITE_DONE) {
-		syslog(LOG_ERR, "Error executing statement: %s", sqlite3_errmsg(db));
+        rpiwd_log(LOG_ERR, "Error executing statement: %s", sqlite3_errmsg(db));
 		sqlite3_finalize(query);
 		return -1;
 	}
@@ -245,13 +250,13 @@ size_t exec_formatted_count_query(const char *count_query) {
 		}
 		else {
 			count = 0;
-			syslog(LOG_ERR, "Error executing formatted count query: %s",
+            rpiwd_log(LOG_ERR, "Error executing formatted count query: %s",
 					sqlite3_errmsg(db));
 		}
 	}
 	else {
 		count = 0;
-		syslog(LOG_ERR, "Error executing formatted count query: %s",
+        rpiwd_log(LOG_ERR, "Error executing formatted count query: %s",
 				sqlite3_errmsg(db));
 	}
 
@@ -260,21 +265,25 @@ size_t exec_formatted_count_query(const char *count_query) {
 	return count;
 }
 
-entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, int *errcode) {
+entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool convert,
+                            int *errcode) {
 	size_t count = exec_formatted_count_query(fcountq);
-	entrylist *list = entrylist_alloc(count);
+    entrylist *list;
 	sqlite3_stmt *query;
-	int rc, i = 0;
+    int rc, i = 0;
+
+    /* Check list count */
+    if (count > DBHANDLER_MAX_FETCHED_ENTRIES) {
+        *errcode = DBHANDLER_ERROR_TOO_MANY_ENTRIES;
+        return NULL;
+    }
+
+    /* Allocate list */
+    list = entrylist_alloc(count);
 
 	/* Check list allocation */
 	if (!list)
 		return NULL;
-
-	/* Check list count */
-	if (count > DBHANDLER_MAX_FETCHED_ENTRIES) {
-		*errcode = DBHANDLER_ERROR_TOO_MANY_ENTRIES;
-		return NULL;
-	}
 
 	/* Prepare query */
 	rc = sqlite3_prepare_v2(db, fselectq, -1, &query, 0);
@@ -284,19 +293,30 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, int *errc
 			/* Initialize entry */
 			list->entries[i].id = sqlite3_column_int(query, 0);
 			list->entries[i].record_date = strdup(sqlite3_column_text(query, 1));
-			list->entries[i].temperature = sqlite3_column_double(query, 2);
 			list->entries[i].humidity = sqlite3_column_double(query, 3);
 			list->entries[i].location = strdup(sqlite3_column_text(query, 4));
 			list->entries[i].device_name = strdup(sqlite3_column_text(query, 5));
 
+            /* Fetch temperature and then check if a conversion is required. */
+            list->entries[i].temperature = sqlite3_column_double(query, 2);
+            if (convert)
+                RPIWD_CELSIUS_TO_FARENHEIT(list->entries[i].temperature);
+
 			/* Increment i */
 			i++;
-		}
+        }
+
+        /* Set list eventual size */
+        list->size = i;
 	}
 	else {
 		/* Log error */
-		syslog(LOG_ERR, "Error retrieving entries by date: %s", sqlite3_errmsg(db));
-		*errcode = DBHANDLER_ERROR_SQL_ERROR;
+        rpiwd_log(LOG_ERR, "Error retrieving entries: %s", sqlite3_errmsg(db));
+        *errcode = DBHANDLER_ERROR_SQL_ERROR;
+
+        /* Reset list */
+        entrylist_free(list);
+        return NULL;
 	}
 
 	sqlite3_finalize(query);

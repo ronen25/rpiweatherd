@@ -12,14 +12,14 @@ The repository contains all code and submodules needed to successfully compile a
 |---------|-----------|
 |<code>src/</code>|Source directory containing C source files|
 |<code>include/</code>|C Header files|
-|<code>initscripts/</code>|Init scripts|
+|<code>skel/</code>|Templates for configuration files and initialization scripts/units|
 |<code>devices/</code>|Device drivers|
 |<code>extra/</code>|Administration script and an Example CLI client|
-|<code>deps/</code>|Directory containing git submodules and Python scripts|
+|<code>deps/</code>|Dependencies required for building the daemon|
 
 ## Dependencies and Requirements
 1. **Raspberry Pi**
-<br />_Tested only on Model A+ and RPi 2/3 Model B_
+<br />_Tested on Model A+ and RPi 2/3 Model B_
 2. **Raspbian 7 Wheezy or newer** <br />
    **Ubuntu 14.04 or newer** <br />
    **Arch Linux** <br />
@@ -31,10 +31,7 @@ _Other distributions are not officialy supported but might also work._
 5. **CMake version 3.0 or newer**
 6. **SQLite3 development libraries version 3.5 or newer**
 7. **WiringPi version 1.1 or newer**
-8. **INIH library** _(pulled in as a submodule)_
-9. **Parson** _(pulled in as a submodule)_
-10. **CheckedInput Library** _(pulled in as a submodule)_
-11. **Python version 3.2 or newer**
+8. **Python version 3.2 or newer**
 
 ## Quick Setup Guide
 ### Installing Dependencies
@@ -43,12 +40,12 @@ Several development libraries must be installed in order to successfully compile
 |Distribution Name|Command to Install|
 |-----------------|------------------|
 |Raspbian/Ubuntu|<code>$ sudo apt-get install cmake python3 gcc make git libsqlite3-dev wiringpi</code>|
-|Arch Linux ARM|<code>$ sudo pacman -S cmake python gcc git make sqlite wiringpi lsb-release</code>|
+|Arch Linux ARM|<code>$ sudo pacman -S cmake python gcc git make sqlite wiringpi</code>|
 
 ### Building and Installing
-1) Clone the repository along with it's submodules.
+1) Clone the repository:
 ```
-    $ git clone --recursive https://github.com/ronen25/rpiweatherd
+    $ git clone https://github.com/ronen25/rpiweatherd --branch 1.1-dev
 ```
 
 2) Create a <code>bin</code> directory, switch to it, and initiate compilation using CMake.
@@ -63,20 +60,19 @@ Several development libraries must be installed in order to successfully compile
 ```
     $ sudo make install
 ```
+4) Configure <code>rpiweatherd</code> according to the [configuration guide](https://github.com/ronen25/rpiweatherd/wiki/Dameon-Configuration).
 
-4) Generate a barebones configuration.
-```
-    $ sudo rpiweatherd -g
-```
-
-5) Configure <code>rpiweatherd</code> according to the [configuration guide](https://github.com/ronen25/rpiweatherd/wiki/Dameon-Configuration).
-
-6) Run the program using the appropriate init tool, either as root or with <code>sudo</code>:
+5) Run the program using the appropriate init tool, either as root or with <code>sudo</code>:
 
 |Distribution Name|Command to Install|
 |-----------------|------------------|
 |Raspbian/Ubuntu|<code># service start rpiweatherd</code>|
 |Arch Linux ARM|<code># systemctl enable rpiweatherd</code>|
+
+6) Test the installation by issuing the [<code>current</code> command](https://github.com/ronen25/rpiweatherd/wiki/Getting-Data#current) from any web browser:
+```
+    http://[ip-of-pi]/current
+```
 
 7) Daemon administration and a reference client can be found in the <code>extra/</code> folder.
 
@@ -87,10 +83,11 @@ I also provide a Qt-based GUI client, developed as a separate project - **[rpiwe
 
 ## Manual Sections
 - [Installation](https://github.com/ronen25/rpiweatherd/wiki/Installation)
-- [Supported Devices](https://github.com/ronen25/rpiweatherd/wiki/Supported-Devices)
+- [Device Support](https://github.com/ronen25/rpiweatherd/wiki/Device-Support)
 - [Configuration](https://github.com/ronen25/rpiweatherd/wiki/Dameon-Configuration)
 - [Running the Daemon](https://github.com/ronen25/rpiweatherd/wiki/Running-the-Daemon)
 - [Getting Data](https://github.com/ronen25/rpiweatherd/wiki/Getting-Data)
+- [Triggers](https://github.com/ronen25/rpiweatherd/wiki/Triggers)
 
 ***
 

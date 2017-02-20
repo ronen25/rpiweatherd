@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #include <string.h>
 #include <parson.h>
 
+#include "measurevals.h"
+
 /* Constants */
 #define JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE	32
 
@@ -36,7 +38,7 @@ typedef struct entry_s {
 
 /* Entry list structure */
 typedef struct entrylist_s {
-	size_t length;
+    size_t size, capacity;
 	entry *entries;
 } entrylist;
 
@@ -56,7 +58,7 @@ entry *entry_alloc(void);
 void entry_free(entry *ent);
 void entry_ptr_free(entry *ent);
 
-entrylist *entrylist_alloc(size_t max_items);
+entrylist *entrylist_alloc(size_t capacity);
 void entrylist_free(entrylist *listptr);
 
 /* Allocating/freeing generic key/value lists 
@@ -70,8 +72,9 @@ void key_value_list_free(key_value_list *list);
 int key_value_list_emplace(key_value_list *list, const char *key, const char *value);
 
 /* JSON */
-JSON_Value *entry_to_json_value(entry *ent);
-JSON_Value *entrylist_to_json_value(entrylist **list);
+JSON_Value *entry_to_json_value(entry *ent, char *unitstr);
+JSON_Value *entrylist_to_json_value(entrylist **list, char *unitstr);
 JSON_Value *key_value_list_to_json_value(key_value_list **list);
+void append_units(JSON_Object *jobj, char *unitstr);
 
 #endif /* RPIWD_DATASTRUCTURES_H */

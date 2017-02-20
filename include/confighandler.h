@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <ctype.h>
 #include <limits.h>
 #include <sys/stat.h>
@@ -27,9 +28,12 @@
 
 #include "ini.h"
 #include "device.h"
+#include "util.h"
+#include "measurevals.h"
 
 #define CONFIG_FILE_DEFAULT_LOCATION 		"/etc/rpiweatherd/rpiweatherd.conf"
 #define CONFIG_FILE_DEFAULT_FOLDER			"/etc/rpiweatherd"
+#define CONFIG_BLANK_FILE_LOCATION          "/etc/rpiweatherd/skel/rpiweatherd.conf"
 #define CONFIG_LOCATION				 		"measure_location"
 #define CONFIG_QUERY_INTERVAL		 		"query_interval"
 #define CONFIG_DEVICE_NAME			 		"device_name"
@@ -55,16 +59,17 @@
 #define CONFIG_NUM_WORKER_THREADS_DEFAULT	1
 #define CONFIG_NUM_WORKER_THREADS_MAX		4
 #define CONFIG_MAX_QUERY_ATTEMPTS			64
+#define CONFIG_MAX_TRIGGERS                 16
 
+/* Configuration structure */
 typedef struct rpiwd_config_s {
 	size_t config_count;
 	char *measure_location;
-	char *units;
 	char *device_name;
 	int device_config;
 	char *query_interval;
 	int comm_port;
-	int num_worker_threads;
+    int num_worker_threads;
 } rpiwd_config;
 
 /* Internal callback */
@@ -87,5 +92,8 @@ int config_has_errors(rpiwd_config *confstrct);
 int init_current_config(const char *config_path);
 rpiwd_config *get_current_config(void);
 void free_current_config(void);
+
+/* Getter for the unit string */
+char *get_unit_string(void);
 
 #endif /* RPIWD_CONFIGHANDLER_H */

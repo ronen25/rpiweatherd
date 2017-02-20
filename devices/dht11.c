@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 
 #include "dht11.h"
 
-int dht11_query_callback(int data_pin, char unit, float *arr) {
+int dht11_query_callback(int data_pin, float *arr) {
 	uint8_t last_state = HIGH, count = 0, j = 0, i;
 	int data[5] = { 0, 0, 0, 0, 0 };
 	char buffer[DHT11_MAX_RESULT_STRING_LEN] = { 0 };
@@ -63,22 +63,12 @@ int dht11_query_callback(int data_pin, char unit, float *arr) {
 
 		/* Print to the buffer to later convert it to a float */
 		sprintf(buffer, "%d.%d", data[2], data[3]);
-		arr[0] = atof(buffer);
+        arr[RPIWD_MEASURE_TEMPERATURE] = atof(buffer);
 
 		/* Do the same for the humidity data, right after cleaning the buffer */
 		memset(buffer, 0, DHT11_MAX_RESULT_STRING_LEN);
 		sprintf(buffer, "%d.%d", data[0], data[1]);
-		arr[1] = atof(buffer);
-
-		/* Check if conversion if required */
-		if (unit == CONFIG_UNITS_UNITCHAR_METRIC)
-			;
-		else if (unit == CONFIG_UNITS_UNITCHAR_IMPERIAL) {
-			arr[0] *= 1.8000;
-			arr[0] += 32.00;
-		}
-		else
-			return RPIWD_DEVRETCODE_UNIT_ERROR;
+        arr[RPIWD_MEASURE_HUMIDITY] = atof(buffer);
 	}
 	else
 		return RPIWD_DEVRETCODE_DATA_FAILURE;

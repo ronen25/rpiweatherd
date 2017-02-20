@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,13 +23,13 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "devretcodes.h"
+#include "devicevals.h"
 #include "confighandler.h"
 
 #define DHT11_MAX_READS 				96
 #define DHT11_MAX_RESULT_STRING_LEN		8 /* xxx.xxx + '\0' ==> 8 characters */
 
-int dht11_query_callback(int data_pin, char unit, float *arr);
+int dht11_query_callback(int data_pin, float *arr);
 int dht11_test(int data_pin);
 
 #endif /* RPIWD_DHT11_H */

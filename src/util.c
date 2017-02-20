@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,17 @@
 
 #include "util.h"
 
+static const char *SUPPORTED_DATETIME_FORMATS[] = {
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d",
+    NULL
+};
+
 int write_pid_file(void) {
 	int fd = 0;
 	char temp_buffer[PID_NUMBER_BUFFER_LENGTH];
 
-	if ((fd = open(PID_FILE, O_RDWR | O_CREAT | O_EXCL, 0444)) == -1)
+    if ((fd = open(PID_FILE, O_RDWR | O_CREAT | O_EXCL, 0444)) == -1)
 		return 0;
 	else {
 		/* Write PID */
@@ -80,47 +86,6 @@ unsigned int rpiwd_units_to_milliseconds(const char *unitstr) {
 	seconds *= count * 1000;
 
 	return (unsigned int)seconds;
-}
-
-int rpiwd_units_to_sqlite(const char *unitstr, char *sqlite_unit, float *unit_count) {
-	const char *ptr = unitstr;
-	char unit = '\0';
-	int count = -1;
-
-	/* Iterate until the unit is found, or end of string. */
-	while (isdigit(*ptr) || *ptr == '.' && *ptr != '\0') { ptr++; }
-	if (*ptr)
-		unit = *ptr;
-
-	/* Get count and check it. If it is correct, multiply it by value in seconds */
-	count = strtof(unitstr, NULL);
-	if (errno == ERANGE || count == 0) {
-		free(sqlite_unit);
-		return 0;
-	}
-
-	/* Check unit */
-	switch (unit) {
-		case 's': /* Seconds */
-			sqlite_unit = strdup(SQLITE_UNIT_SECONDS);
-			*unit_count = count;
-			break;
-		case 'm': /* Minutes */
-			sqlite_unit = strdup(SQLITE_UNIT_MINUTES);
-			*unit_count = count;
-			break;
-		case 'h': /* Hours */
-			sqlite_unit = strdup(SQLITE_UNIT_HOURS);
-			*unit_count = count;
-			break;
-		case 'd': /* Days - actual unit is ignored, so it doesn't really matter */
-			sqlite_unit = strdup(SQLITE_UNIT_SECONDS);
-			break;
-		default: /* Unknown / missing */
-			return 0;
-	}
-
-	return 1;
 }
 
 char rpiwd_direction_to_char(const char *direction) {
@@ -204,3 +169,83 @@ time_t rpiwd_units_to_time_t(const char *unitstr, char operation) {
 	return now;
 }
 
+
+time_t normalize_date(const char *value, bool *rdtn_performed) {
+    time_t temp;
+    struct tm temptm = { 0 };
+    char *retval;
+
+    /* Check if it is the "now" string */
+    if (strcmp(value, "now") == 0)
+        return time(NULL);
+
+    for (const char **format_ptr = SUPPORTED_DATETIME_FORMATS;
+         *format_ptr; format_ptr++) {
+        if ((retval = strptime(value, *format_ptr, &temptm)) != NULL) {
+            temp = mktime(&temptm);
+            *rdtn_performed = false;
+
+            break;
+        }
+    }
+
+    /* Check value */
+    if (*rdtn_performed) {
+        /* Attempt to parse as rpiwd units */
+        temp = rpiwd_units_to_time_t(value, '-');
+    }
+
+    /* We tried all we can */
+    return temp;
+}
+
+int rpiwd_copyfile(const char *src, const char *dest) {
+    FILE *fsrc, *fdst;
+    char buffer[RPIWD_COPYFILE_BUFFSIZE];
+    size_t read_bytes = 0, written_bytes = 0;
+
+    /* Open source and dest file */
+    fsrc = fopen(src, "rb");
+    if (!fsrc)
+        return 0;
+
+    fdst = fopen(dest, "wb");
+    if (!fdst)
+        return 0;
+
+    /* Read/Write loop */
+    while ((read_bytes =
+            fread(buffer, sizeof(char), RPIWD_COPYFILE_BUFFSIZE, fsrc)) != 0) {
+        written_bytes = fwrite(buffer, sizeof(char), read_bytes, fdst);
+        if (written_bytes != read_bytes) {
+            fclose(fsrc);
+            fclose(fdst);
+
+            return -1;
+        }
+    }
+
+    /* Done. */
+    fclose(fsrc);
+
+    fflush(fdst);
+    fclose(fdst);
+
+    return 1;
+}
+
+int rpiwd_file_exists(const char *path) {
+    return access(path, F_OK) != -1;
+}
+
+int rpiwd_is_number(const char *str) {
+    const char *ptr = str;
+    while (*ptr) {
+        if (!isdigit(*ptr))
+            return 0;
+
+        ptr++;
+    }
+
+    return 1;
+}

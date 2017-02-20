@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,14 +37,6 @@ static cmd_callback CMD_CALLBACK_TABLE[] = {
 
 /* =================================================================================== */
 
-const char *SUPPORTED_DATETIME_FORMATS[] = {
-	"%Y-%m-%d %H:%M",
-	"%Y-%m-%d",
-	NULL
-};
-
-/* =================================================================================== */
-
 /* Init/quit */
 void init_listener_loop(int num_worker_threads, int comm_port) {
 	/* Initialize main worker thread */
@@ -52,13 +44,13 @@ void init_listener_loop(int num_worker_threads, int comm_port) {
 			(void *)comm_port);
 
 	if (result != 0) {
-		syslog(LOG_ERR, "Unable to create main listener thread: %s.", strerror(errno));
+        rpiwd_log(LOG_ERR, "Unable to create main listener thread: %s.", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	/* Set worker thread count globally */
 	if (num_worker_threads > MAX_WORKER_THREADS) {
-		syslog(LOG_WARNING, "num_worker_threads is bigger then %d; using max instead.",
+        rpiwd_log(LOG_WARNING, "num_worker_threads is bigger then %d; using max instead.",
 				MAX_WORKER_THREADS);
 		num_worker_threads = MAX_WORKER_THREADS;
 	}
@@ -76,7 +68,7 @@ void quit_listener_loop(void) {
 
 	/* Check return flag */
 	if (flag == -1)
-		syslog(LOG_ERR, "listener thread terminated with an error.");
+        rpiwd_log(LOG_ERR, "listener thread terminated with an error.");
 
 	/* Free descriptor array pointer */
 	free(__workers);
@@ -98,7 +90,7 @@ void *main_listener_loop(void *comm_port) {
 	/* Initialize worker thread array */
 	__workers = malloc(sizeof(pthread_t) * __num_workers);
 	if (!__workers) {
-		syslog(LOG_ERR, "Unable to allocate worker thread descriptor array: %s",
+        rpiwd_log(LOG_ERR, "Unable to allocate worker thread descriptor array: %s",
 				strerror(errno));
 		return (void *) -1;
 	}
@@ -109,7 +101,7 @@ void *main_listener_loop(void *comm_port) {
 	attr.mq_msgsize = LISTENER_MAX_MESSAGE_SIZE;
 	__worker_mqueue = mq_open(RPIWD_WORKER_QUEUE_NAME, O_CREAT | O_RDWR, 0666, &attr);
 	if (__worker_mqueue == (mqd_t) -1) {
-		syslog(LOG_ERR, "error creating worker thread queue: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "error creating worker thread queue: %s", strerror(errno));
 		return (void * )-1;
 	}
 
@@ -117,7 +109,7 @@ void *main_listener_loop(void *comm_port) {
 	for (i = 0; i < __num_workers; i++) {
 		flag = pthread_create(&__workers[i], NULL, worker_listener_loop, NULL);
 		if (flag != 0) {
-			syslog(LOG_ERR, "error creating worker thread: %s", strerror(errno));
+            rpiwd_log(LOG_ERR, "error creating worker thread: %s", strerror(errno));
 			return (void *) -2;
 		}
 	}
@@ -129,7 +121,7 @@ void *main_listener_loop(void *comm_port) {
 	/* Prepare main listener socket */
 	sockfd = get_bound_socket((int)comm_port);
 	if (sockfd == -1) {
-		syslog(LOG_ERR, "Could not get bound socket: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "Could not get bound socket: %s", strerror(errno));
 		return (void *) -1;
 	}
 
@@ -146,7 +138,7 @@ void *main_listener_loop(void *comm_port) {
 		addrlen = sizeof(struct sockaddr_storage);
 		clientsock = accept(sockfd, (struct sockaddr *)&claddr, &addrlen);
 		if (clientsock == -1) {
-			syslog(LOG_ERR, "error accepting connection: %s", strerror(errno));
+            rpiwd_log(LOG_ERR, "error accepting connection: %s", strerror(errno));
 			continue;
 		}
 
@@ -154,10 +146,10 @@ void *main_listener_loop(void *comm_port) {
 		setsockopt(clientsock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, 
 				sizeof(struct timeval));
 
-		/* Build message */
-		msgbuff.is_completed = 0;
-		msgbuff.sockfd = clientsock;
-		msgbuff.receiver_mq = __worker_mqueue;
+        /* Build message */
+        rpiwd_mqmsg_init(&msgbuff);
+        msgbuff.sockfd = clientsock;
+        msgbuff.receiver_mq = __worker_mqueue;
 
 		/* Send to workers queue */
 		mq_send(__worker_mqueue, (const char *)&msgbuff, sizeof(rpiwd_mqmsg), 0);
@@ -230,7 +222,7 @@ void *worker_listener_loop(void *arg) {
 				end_response(msgbuff.sockfd, cmd);
 
 				continue;
-			}
+            }
 
 			/* Dispatch command callback */
 			cmd_status = dispatch_command(cmd, &msgbuff);
@@ -259,10 +251,11 @@ void *worker_listener_loop(void *arg) {
 			/* Check response type, and get value accordingly */
 			switch (msgbuff.mtype) {
 				case DB_MSGTYPE_FETCH:
-					jval = entrylist_to_json_value((entrylist **)&msgbuff.data);
+                    jval = entrylist_to_json_value((entrylist **)&msgbuff.data,
+                                                   msgbuff.unitstr);
 					break;
 				case DB_MSGTYPE_CURRENT:
-					jval = entry_to_json_value((entry *)msgbuff.data);
+                    jval = entry_to_json_value((entry *)msgbuff.data, msgbuff.unitstr);
 					break;
 				case DB_MSGTYPE_STATS:
 				case DB_MSGTYPE_CONFIG:
@@ -272,7 +265,7 @@ void *worker_listener_loop(void *arg) {
 
 			/* If something was received, generate appropriate 
 			 * HTTP response and send to client */
-			if (jval) {
+            if (jval) {
 				/* Serialize and send */
 				char *serialized = json_serialize_to_string(jval);
 
@@ -315,16 +308,10 @@ void *worker_listener_loop(void *arg) {
 				/* Finish response */
 				close(msgbuff.sockfd);
 						
-				/* Free buffers */
-				rpiwd_mqmsg_free(&msgbuff, 0);
-
-				continue;
+                continue;
 			}
 		}
-
-		/* Free buffers */
-		rpiwd_mqmsg_free(&msgbuff, 0);
-	}
+    }
 
 	return (void *) 0;
 }
@@ -346,7 +333,7 @@ int get_bound_socket(int port) {
 	sprintf(str_port, "%d", port);
 
 	if (getaddrinfo(NULL, str_port, &hints, &result) != 0) {
-		syslog(LOG_ERR, "getaddrinfo error: %s", strerror(errno));
+        rpiwd_log(LOG_ERR, "getaddrinfo error: %s", strerror(errno));
 		return -1;
 	}
 
@@ -402,23 +389,22 @@ int dispatch_command(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	cmd_callback *ptr = &CMD_CALLBACK_TABLE[0];
 
 	while (ptr->cmd_name)
-		if (strcmp(ptr->cmd_name, params->cmdname) == 0)
-			break;
-		else
-			ptr++;
+        if (strcmp(ptr->cmd_name, params->cmdname) != 0)
+            ptr++;
+        else break;
 
-	if (ptr->cmd_name)
-		return ptr->callback(params, msgbuff);
+    if (ptr->cmd_name)
+        return ptr->callback(params, msgbuff);
 	else
 		return CALLBACK_RETCODE_UNKNOWN_COMMAND;
 }
 
 int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	time_t from = 0, to = 0, on = 0, temp;
-	struct tm temptm;
 	http_cmd_param *ptr;
-	char *retval;
-	int retflag = 0, rdtn_performed;
+    char *retval;
+    int retflag = 0, select = 0;
+    bool rdtn_performed;
 
 	/* Point at first argument, if any */
 	if (params->params)
@@ -427,55 +413,60 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 		return CALLBACK_RETCODE_PARAMS_MISSING;
 
 	/* Check parameters */
-	for (int i = 0; i < params->length; i++, ptr++) {
-		/* Zero memory */
-		memset(&temptm, 0, sizeof(struct tm));
-		rdtn_performed = 1;
+    for (int i = 0; i < params->length; i++, ptr++) {
+        rdtn_performed = true;
 
 		/* Check if parameter has value */
 		if (!ptr->value) {
 			retflag = CALLBACK_RETCODE_PARAM_ERROR;
 			break;
-		}
+        }
 
-		/* Generally, first check value against formats */
-		for (const char **format_ptr = SUPPORTED_DATETIME_FORMATS; 
-				*format_ptr != NULL; format_ptr++) {
-			if ((retval = strptime(ptr->value, *format_ptr, &temptm)) != NULL) {
-				temp = mktime(&temptm);
-				rdtn_performed = 0;
+        if (strcmp(ptr->name, "tempunit") == 0) {
+            /* Should be one character */
+            if (strlen(ptr->value) == 1)
+                ptr->value[0] = tolower(ptr->value[0]);
+            else {
+                retflag = CALLBACK_RETCODE_PARAM_ERROR;
+                break;
+            }
 
-				break;
-			}
-		}
+            /* Check */
+            if (ptr->value[0] == RPIWD_TEMPERATURE_FARENHEIT)
+                msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] =
+                        RPIWD_TEMPERATURE_FARENHEIT;
+            else if (ptr->value[0] != RPIWD_TEMPERATURE_CELSIUS) {
+                /* Unrecognized unit */
+                retflag = CALLBACK_RETCODE_PARAM_ERROR;
+                break;
+            }
+        }
+        else if (strcmp(ptr->name, "from") == 0 || strcmp(ptr->name, "to") == 0 ||
+                 strcmp(ptr->name, "on") == 0) {
+            /* Get date input and normalize it */
+            temp = normalize_date(ptr->value, &rdtn_performed);
+            if (temp == 0 || temp == -1) {
+                retflag = CALLBACK_RETCODE_PARAM_ERROR;
+                break;
+            }
 
-		/* Check value */
-		if (rdtn_performed) {
-			/* Attempt to parse as rpiwd units */
-			temp = rpiwd_units_to_time_t(ptr->value, '-');
-		}
-
-		/* Check if it is the "now" string */
-		if (strcmp(ptr->value, "now") == 0 && !temp)
-			temp = time(NULL);
-
-		/* We tried all we can - check value now */
-		if (temp == -1 || temp == 0) {
-			retflag = CALLBACK_RETCODE_PARAM_ERROR;
-			break;
-		}
-
-		/* Check parameter name */
-		if (strcmp(ptr->name, "from") == 0)
-			from = rdtn_performed ? DAY_START(temp) : temp;
-		else if (strcmp(ptr->name, "to") == 0)
-			to = rdtn_performed ? DAY_END(temp) : temp;
-		else if (strcmp(ptr->name, "on") == 0)
-			on = temp;
-		else { /* Unknown parameter */
-			retflag = CALLBACK_RETCODE_UNKNOWN_PARAM;
-			break;
-		}
+            /* Check parameter name again */
+            if (strcmp(ptr->name, "from") == 0)
+                from = rdtn_performed ? DAY_START(temp) : temp;
+            else if (strcmp(ptr->name, "to") == 0)
+                to = rdtn_performed ? DAY_END(temp) : temp;
+            else if (strcmp(ptr->name, "on") == 0)
+                on = temp;
+        }
+        else if (strcmp(ptr->name, "select") == 0) {
+            select = strtol(ptr->value, NULL, 10);
+            if (errno == ERANGE || select < 0)
+                return CALLBACK_RETCODE_PARAM_ERROR;
+        }
+        else {
+            retflag = CALLBACK_RETCODE_UNKNOWN_PARAM;
+            break;
+        }
 	}
 
 	/* If an error, return that error */
@@ -485,24 +476,26 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	/* Build SQL queries */
 	msgbuff->mtype = DB_MSGTYPE_FETCH;
 
-	if (from && !to && !on) {
+    /* Check date range parameters
+     * TODO: This is pretty ugly. Replace this in the future. */
+    if (from && !to && !on && !select) {
 		/* Use "BY_DATE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE, '>', difftime(from, 0));
 		msgbuff->fselectq = format_query(SQLCMD_READ_BY_DATE, '>', difftime(from, 0));
 	}
-	else if (from && to && !on) {
+    else if (from && to && !select && !on) {
 		/* Use "BY_DATE_RANGE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE_RANGE, difftime(from, 0),
 			   	difftime(to, 0));
 		msgbuff->fselectq = format_query(SQLCMD_READ_BY_DATE_RANGE, difftime(from, 0),
 			   	difftime(to, 0));
 	}
-	else if (!from && to && !on) {
+    else if (!from && to && !select && !on) {
 		/* Use "BY_DATE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE, '<', difftime(to, 0));
 		msgbuff->fselectq = format_query(SQLCMD_READ_BY_DATE, '<', difftime(to, 0));
 	}
-	else if (!from && !to && on) {
+    else if (!from && !to && !select && on) {
 		/* Use "BY_DATE_RANGE" queries */
 		msgbuff->fcountq = format_query(SQLCMD_COUNT_BY_DATE_RANGE, 
 				difftime(DAY_START(on), 0),
@@ -511,8 +504,12 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 				difftime(DAY_START(on), 0),
 			   	difftime(DAY_END(on), 0));
 	}
+    else if (!from && !to && !on && select > 0) {
+        msgbuff->fcountq = format_query(SQLCMD_COUNT_SELECT_N, select);
+        msgbuff->fselectq = format_query(SQLCMD_SELECT_N, select);
+    }
 	else 
-		return CALLBACK_RETCODE_PARAM_ERROR;
+        return CALLBACK_RETCODE_PARAM_ERROR;
 
 	return retflag;
 }
@@ -522,16 +519,49 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
  * For future versions, combine these two into a single function in device.c */
 int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	float temp[2];
-	int qattempts = 0, qflag;
+    int qattempts = 0, qflag;
+    bool conversion_needed;
 
-	/* Command should have no parameters at all */
-	if (params->length > 0)
-		return CALLBACK_RETCODE_NO_PARAMS_NEEDED;
+    /* Command should have one/no parameters. */
+    if (params->length == 1) {
+        http_cmd_param *param = &params->params[0];
+
+        /* Should be one character, so lower it if needed. */
+        if (strlen(param->value) == 1)
+            param->value[0] = tolower(param->value[0]);
+        else
+            return CALLBACK_RETCODE_PARAM_ERROR;
+
+        /* Only valid parameter is 'tempunit' */
+        if (strcmp(param->name, "tempunit") == 0) {
+            /* Check length and lower */
+            switch (param->value[0]) {
+            case RPIWD_TEMPERATURE_FARENHEIT:
+                msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] = RPIWD_TEMPERATURE_FARENHEIT;
+                break;
+            case RPIWD_TEMPERATURE_CELSIUS:
+                msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] = RPIWD_TEMPERATURE_CELSIUS;
+                break;
+            default:
+                return CALLBACK_RETCODE_PARAM_ERROR;
+            }
+        }
+        else
+            return CALLBACK_RETCODE_UNKNOWN_PARAM;
+    }
+    else if (params->length > 1)
+        return CALLBACK_RETCODE_TOO_MANY_PARAMS;
 
 	/* Query data */
 	do {
-		qflag = device_query_current(get_current_config()->units[0], temp);
-		qattempts++;
+        qflag = device_query_current(temp);
+        qattempts++;
+
+        /* Check if conversion is needed */
+        conversion_needed = msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] !=
+                            RPIWD_TEMPERATURE_CELSIUS;
+        if (qflag == RPIWD_DEVRETCODE_SUCCESS && conversion_needed)
+            RPIWD_CELSIUS_TO_FARENHEIT(temp[0]);
 	} while (qflag != RPIWD_DEVRETCODE_SUCCESS && qattempts < CONFIG_MAX_QUERY_ATTEMPTS);
 
 	/* Check whether query has been successful */
@@ -585,7 +615,7 @@ int statistics_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	key_value_list_emplace(lptr, "hostname", buffer);
 
 	/* Server version */
-	sprintf(buffer, "%d.%d", RPIWEATHERD_VERSION_MAJOR, RPIWEATHERD_VERSION_MINOR);
+    sprintf(buffer, "%s", RPIWEATHERD_VERSION);
 	key_value_list_emplace(lptr, "version", buffer);
 
 	/* System uptime */
@@ -625,8 +655,6 @@ int config_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 
 	sprintf(temp_buffer, "%d", config_ptr->device_config);
 	key_value_list_emplace(kvlist, CONFIG_DEVICE_CONFIG, temp_buffer);
-
-	key_value_list_emplace(kvlist, CONFIG_UNITS, config_ptr->units);
 
 	sprintf(temp_buffer, "%d", config_ptr->comm_port);
 	key_value_list_emplace(kvlist, CONFIG_COMM_PORT, temp_buffer);

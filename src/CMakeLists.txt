@@ -1,6 +1,6 @@
 # 
 # rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
-# Copyright (C) 2016 Ronen Lapushner
+# Copyright (C) 2016-2017 Ronen Lapushner
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,10 +20,12 @@ add_definitions(-D_BSD_SOURCE -D_POSIX_C_SOURCE=199309L -D_DEFAULT_SOURCE -D_XOP
 # Check for all device sources
 file(GLOB SOURCES *.c)
 file(GLOB DEVICES ${PROJECT_SOURCE_DIR}/devices/*.c)
-file(GLOB INIH ${PROJECT_SOURCE_DIR}/deps/inih/*.c)
-set(PARSON ${PROJECT_SOURCE_DIR}/deps/parson/parson.c)
+file(GLOB DEPS ${PROJECT_SOURCE_DIR}/deps/*.c)
 
-## Find include paths
+# Configure inih with additional defines
+add_definitions(-DINI_STOP_ON_FIRST_ERROR=1)
+
+# Find include paths
 find_library(WIRINGPI_LIBS NAMES wiringPi)
 find_path(WIRINGPI_INCLUDES NAMES wiringPi.h)
 find_library(SQLITE3_LIBS NAMES sqlite3)
@@ -37,7 +39,8 @@ find_package_handle_standard_args(sqlite3 DEFAULT_MSG SQLITE3_LIBS SQLITE3_INCLU
 
 include_directories(${WIRINGPI_INCLUDES})
 include_directories(${SQLITE3_INCLUDES})
-include_directories(${PROJECT_SOURCE_DIR}/deps/parson)
+include_directories(${PROJECT_SOURCE_DIR}/deps/)
+include_directories(${PROJECT_SOURCE_DIR}/devices/)
 
 ## Additional compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99")
@@ -46,7 +49,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --std=c99")
 set(CMAKE_C_FLAGS_DEBUG "-DRPIWD_DEBUG -g")
 
 # Add executable
-add_executable(rpiweatherd ${SOURCES} ${DEVICES} ${INIH} ${PARSON})
+add_executable(rpiweatherd ${SOURCES} ${DEVICES} ${DEPS})
 target_link_libraries(rpiweatherd ${WIRINGPI_LIBS} ${SQLITE3_LIBS})
 target_link_libraries(rpiweatherd ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rpiweatherd rt)
@@ -55,3 +58,10 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # Install target and run script to determine init system
 install(TARGETS rpiweatherd DESTINATION bin)
 install(SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
+
+# Install files in skel folder and create it
+install(DIRECTORY DESTINATION "/etc/rpiweatherd/skel")
+install(FILES "${PROJECT_SOURCE_DIR}/skel/rpiweatherd.conf"
+    DESTINATION "/etc/rpiweatherd/skel")
+install(FILES "${PROJECT_SOURCE_DIR}/skel/rpiwd_triggers.conf"
+    DESTINATION "/etc/rpiweatherd/skel")

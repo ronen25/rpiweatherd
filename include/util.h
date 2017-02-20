@@ -1,6 +1,6 @@
 /*
  * rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
- * Copyright (C) 2016 Ronen Lapushner
+ * Copyright (C) 2016-2017 Ronen Lapushner
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,11 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <syslog.h>
+
+#include "logging.h"
 
 #define PID_FILE "/tmp/rpiweatherd.pid"
 
@@ -41,15 +46,14 @@
 #define DIRECTION_STRING_TO "to"
 
 #define PID_NUMBER_BUFFER_LENGTH	16
+#define RPIWD_COPYFILE_BUFFSIZE     2048
+#define RPIWD_DOUBLE_BUFFER_LENGTH   24
 
 /* ASCII Art defines */
-#define ASCII_TITLE "            _                    _   _                  _\n" \
-	" _ __ _ __ (_)_      _____  __ _| |_| |__   ___ _ __ __| |\n" \
-	"| '__| '_ \\| \\ \\ /\\ / / _ \\/ _` | __| '_ \\ / _ \\ '__/ _` |\n" \
-	"| |  | |_) | |\\ V  V /  __/ (_| | |_| | | |  __/ | | (_| |\n" \
-	"|_|  | .__/|_| \\_/\\_/ \\___|\\__,_|\\__|_| |_|\\___|_|  \\__,_| " \
-	" Version %d.%d\n" \
-	"     |_|                                                  \n"
+#define ASCII_TITLE "rpiweatherd, version %s\n" \
+                    "Copyright (C) 2016-2017 Ronen Lapushner.\n\n" \
+                    "License GPLv3+: GNU GPL version 3 or later " \
+                    "<http://gnu.org/licenses/gpl.html>\n" \
 
 /* Conversion from rpiwd time units to seconds */
 unsigned int rpiwd_units_to_milliseconds(const char *unitstr);
@@ -57,6 +61,9 @@ int rpiwd_units_to_sqlite(const char *unitstr, char *sqlite_unit, float *unit_co
 char rpiwd_direction_to_char(const char *direction);
 time_t rpiwd_units_to_time_t(const char *unitstr, char operation);
 int is_rpiwd_units(const char *str);
+
+/* Date/time parsing */
+time_t normalize_date(const char *value, bool *rdtn_performed);
 
 /* Custom sleep function */
 void rpiwd_sleep(unsigned int milliseconds);
@@ -67,5 +74,15 @@ char *rpiwd_getline(const char *line, const char *newline);
 /* Daemon PID File and checks */
 int pid_file_exists(void);
 int write_pid_file(void);
+
+/* File utilities */
+int rpiwd_copyfile(const char *src, const char *dest);
+int rpiwd_file_exists(const char *path);
+
+/* Conversion Helpers */
+int rpiwd_is_number(const char *str);
+
+#define RPIWD_CELSIUS_TO_FARENHEIT(var) \
+    ((var) = ((var) * 9 / 5 + 32))
 
 #endif /* RPIWD_UTIL_H */

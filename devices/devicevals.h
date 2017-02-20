@@ -14,10 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mqmsg.h"
+#ifndef RPIWD_DEVRETCODES_H
+#define RPIWD_DEVRETCODES_H
 
-void rpiwd_mqmsg_init(rpiwd_mqmsg *ret) {
-    ret->fcountq = ret->fselectq = NULL;
-    ret->is_completed = 0;
-    memcpy(ret->unitstr, get_unit_string(), sizeof(char) * RPIWD_MAX_MEASUREMENTS);
-}
+/* Device query return values */
+#define RPIWD_DEVRETCODE_SUCCESS            0
+#define RPIWD_DEVRETCODE_DEVICE_FAILURE     -1
+#define RPIWD_DEVRETCODE_DATA_FAILURE	    -2
+#define RPIWD_DEVRETCODE_GENERAL_FAILURE	-3
+#define RPIWD_DEVRETCODE_MEMORY_ERROR	    -4
+#define RPIWD_DEVRETCODE_UNIT_ERROR	        -5
+
+#endif /* RPIWD_DEVRETCODES_H */

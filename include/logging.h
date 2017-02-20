@@ -14,10 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mqmsg.h"
+#ifndef RPIWD_LOGGING_H
+#define RPIWD_LOGGING_H
 
-void rpiwd_mqmsg_init(rpiwd_mqmsg *ret) {
-    ret->fcountq = ret->fselectq = NULL;
-    ret->is_completed = 0;
-    memcpy(ret->unitstr, get_unit_string(), sizeof(char) * RPIWD_MAX_MEASUREMENTS);
-}
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdarg.h>
+
+#include <syslog.h>
+
+void init_logging(bool is_foreground);
+void quit_logging(void);
+
+/* Logging function */
+void rpiwd_log(int priority, const char *msg, ...);
+
+#endif /* RPIWD_LOGGING_H */

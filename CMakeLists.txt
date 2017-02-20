@@ -1,6 +1,6 @@
 # 
 # rpiweatherd - A weather daemon for the Raspberry Pi that stores sensor data.
-# Copyright (C) 2016 Ronen Lapushner
+# Copyright (C) 2016-2017 Ronen Lapushner
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,22 +14,48 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 project(rpiweatherd C)
 
-# Set version
-set(RPIWEATHERD_VERSION_MAJOR 1)
-set(RPIWEATHERD_VERSION_MINOR 0)
+# Find git information
+# Get the current working branch
+execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Get the latest abbreviated commit hash of the working branch
+execute_process(
+    COMMAND git log -1 --format=%h
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Set version string
+if(NOT GIT_BRANCH EQUAL "master")
+    # Set versions
+    set(RPIWEATHERD_VERSION "\"${GIT_BRANCH}-${GIT_COMMIT_HASH}\"")
+    set(RPIWEATHERD_VERSION_RAW "${GIT_BRANCH}-${GIT_COMMIT_HASH}")
+else()
+    # Read version information from file
+    file(READ version RPIWEATHERD_VERSION)
+
+    # Set versions
+    set(RPIWEATHERD_VERSION_RAW RPIWEATHERD_VERSION)
+    set(RPIWEATHERD_VERSION "\"${RPIWEATHERD_VERSION}\"")
+endif()
+
+# Set build date
+string(TIMESTAMP RPIWEATHERD_BUILD_DATE)
+if (RPIWEATHERD_BUILD_DATE EQUAL "")
+    set(RPIWEATHERD_BUILD_DATE "")
+endif()
 
 # Set the server id by running 'lsb_release -is'
-execute_process(COMMAND "lsb_release" "-is" OUTPUT_VARIABLE DISTRO_NAME)
-if (DISTRO_NAME STREQUAL "")
-	message(WARNING "Could not execute 'lsb_release -is'; default server ID used.")
-	set(RPIWEATHERD_FULL_SERVER_ID "\"rpiweatherd v.${RPIWEATHERD_VERSION_MAJOR}.${RPIWEATHERD_VERSION_MINOR}\"")
-else()
-	string(REPLACE "\n" "" DISTRO_NAME "${DISTRO_NAME}")
-	set(RPIWEATHERD_FULL_SERVER_ID "\"rpiweatherd v.${RPIWEATHERD_VERSION_MAJOR}.${RPIWEATHERD_VERSION_MINOR} (${DISTRO_NAME})\"")
-endif()
+set(RPIWEATHERD_FULL_SERVER_ID "\"rpiweatherd/${RPIWEATHERD_VERSION_RAW}\"")
 
 # Set policies
 cmake_policy(SET CMP0014 OLD)
@@ -52,14 +78,14 @@ add_custom_target(uninstall
 # Include directories
 include_directories(include)
 include_directories("${PROJECT_BINARY_DIR}")
-include_directories(deps/inih)
+include_directories(deps/)
 include_directories(devices)
 
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(include)
 add_subdirectory(devices)
-add_subdirectory(deps/inih)
+add_subdirectory(deps)
 
 # Find functions
 include(CheckFunctionExists)
@@ -69,4 +95,7 @@ check_function_exists(getopt HAVE_GETOPT)
 check_function_exists(flock  HAVE_FLOCK)
 check_function_exists(nanosleep HAVE_NANOSLEEP)
 check_function_exists(strptime HAVE_STRPTIME)
-
+check_function_exists(getline HAVE_GETLINE)
+check_function_exists(vsyslog HAVE_VSYSLOG)
+check_function_exists(fork HAVE_FORK)
+check_function_exists(execl HAVE_EXECL)
