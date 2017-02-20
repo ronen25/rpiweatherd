@@ -137,7 +137,7 @@ void query_loop(void) {
 				case RPIWD_DEVRETCODE_DEVICE_FAILURE:
 				case RPIWD_DEVRETCODE_DATA_FAILURE:
                 case RPIWD_DEVRETCODE_GENERAL_FAILURE:
-                    if (qattempts % 5)
+                    if (qattempts % 5 == 0)
                         rpiwd_log(LOG_WARNING,
                                 "device %s failed to query; %d/%d attempts so far.",
                                 get_current_config()->device_name, ++qattempts,
