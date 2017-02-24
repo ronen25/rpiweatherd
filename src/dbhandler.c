@@ -86,7 +86,7 @@ void *db_thread_event_loop(void *unused) {
 	int old;
 	ssize_t res;
     rpiwd_mqmsg msg_buffer;
-    bool needs_convert;
+    bool keep_native_unit;
 
 	/* Initialize thread cancellation and cleanup */
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old);
@@ -114,12 +114,12 @@ void *db_thread_event_loop(void *unused) {
 		}
         else if (msg_buffer.mtype == DB_MSGTYPE_FETCH) {
             /* Check if a conversion is required */
-            needs_convert = msg_buffer.unitstr[RPIWD_MEASURE_TEMPERATURE] ==
-                            RPIWD_TEMPERATURE_CELSIUS ? false : true;
+            keep_native_unit = msg_buffer.unitstr[RPIWD_MEASURE_TEMPERATURE] ==
+                               RPIWD_TEMPERATURE_CELSIUS;
 			/* Execute query */
             msg_buffer.data = exec_fetch_query(msg_buffer.fcountq,
                     msg_buffer.fselectq,
-                    needs_convert,
+                    keep_native_unit,
                     &msg_buffer.retcode);
 
 			/* Update statistics */
@@ -265,8 +265,8 @@ size_t exec_formatted_count_query(const char *count_query) {
 	return count;
 }
 
-entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool convert,
-                            int *errcode) {
+entrylist *exec_fetch_query(const char *fcountq, const char *fselectq,
+                            bool keep_native_unit, int *errcode) {
 	size_t count = exec_formatted_count_query(fcountq);
     entrylist *list;
 	sqlite3_stmt *query;
@@ -299,7 +299,7 @@ entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool conv
 
             /* Fetch temperature and then check if a conversion is required. */
             list->entries[i].temperature = sqlite3_column_double(query, 2);
-            if (convert)
+            if (!keep_native_unit)
                 RPIWD_CELSIUS_TO_FARENHEIT(list->entries[i].temperature);
 
 			/* Increment i */

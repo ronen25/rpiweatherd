@@ -432,10 +432,10 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
             }
 
             /* Check */
-            if (ptr->value[0] == RPIWD_TEMPERATURE_FARENHEIT)
+            if (ptr->value[0] == RPIWD_TEMPERATURE_CELSIUS)
                 msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] =
-                        RPIWD_TEMPERATURE_FARENHEIT;
-            else if (ptr->value[0] != RPIWD_TEMPERATURE_CELSIUS) {
+                        RPIWD_TEMPERATURE_CELSIUS;
+            else if (ptr->value[0] != RPIWD_TEMPERATURE_FARENHEIT) {
                 /* Unrecognized unit */
                 retflag = CALLBACK_RETCODE_PARAM_ERROR;
                 break;
@@ -520,7 +520,7 @@ int fetch_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
 	float temp[2];
     int qattempts = 0, qflag;
-    bool conversion_needed;
+    bool keep_native_unit;
 
     /* Command should have one/no parameters. */
     if (params->length == 1) {
@@ -558,9 +558,9 @@ int current_command_callback(http_cmd *params, rpiwd_mqmsg *msgbuff) {
         qattempts++;
 
         /* Check if conversion is needed */
-        conversion_needed = msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] !=
-                            RPIWD_TEMPERATURE_CELSIUS;
-        if (qflag == RPIWD_DEVRETCODE_SUCCESS && conversion_needed)
+        keep_native_unit = msgbuff->unitstr[RPIWD_MEASURE_TEMPERATURE] ==
+                           RPIWD_TEMPERATURE_CELSIUS;
+        if (qflag == RPIWD_DEVRETCODE_SUCCESS && !keep_native_unit)
             RPIWD_CELSIUS_TO_FARENHEIT(temp[0]);
 	} while (qflag != RPIWD_DEVRETCODE_SUCCESS && qattempts < CONFIG_MAX_QUERY_ATTEMPTS);
 
