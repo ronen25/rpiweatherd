@@ -37,7 +37,6 @@ execute_process(
 # Set version string
 if(NOT GIT_BRANCH MATCHES "master")
     # Set versions
-    message("\n\nTHIS IS NOT MASTER!!! ${GIT_BRANCH}\n\n")
     set(RPIWEATHERD_VERSION "\"${GIT_BRANCH}-${GIT_COMMIT_HASH}\"")
     set(RPIWEATHERD_VERSION_RAW "${GIT_BRANCH}-${GIT_COMMIT_HASH}")
 else()
