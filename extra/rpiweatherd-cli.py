@@ -1,6 +1,6 @@
 '''
 rpiweatherd-cli.py - A command-line client for rpiweatherd written in Python 3.
-Copyright (C) 2016 Ronen Lapushner
+Copyright (C) 2016-2017 Ronen Lapushner
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,14 +27,14 @@ import argparse
 from deps import CheckedInput
 
 __author__ = 'Ronen Lapushner'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 # Connection constants
 SERVER_REQUEST_URL = 'http://{}:{}/{}'
 
 # Regex compiled
 ARG_VALIDATOR = re.compile('\w+=.+')
-CONN_DETAILS = (None, None)
+CONN_DETAILS = (None, None, None)
 CONFIG = None
 
 # Other constants
@@ -47,19 +47,19 @@ class CmdShell(cmd.Cmd):
     def __is_connected(self):
         return CONN_DETAILS[0] != None
 
-    def __print_entry(self, data, compact_print=False):
+    def __print_entry(self, data, tempunit, compact_print=False):
         if not compact_print:
             print('Temperature:\t\t{}{}\nHumdity:\t\t{}%\n\nMeasurement Details:\n' \
                     'Taken in \t\t{} (using {})\n'
                     .format(data['temperature'], 
-                            ' C' if CONFIG['units'] == 'metric' else ' F',
+			    tempunit,
                             data['humidity'], 
                             data['location'], data['device_name']))
         else:
             print(ENTRY_COMPACT_FORMAT.format(
                 data['record_date'], 
                 data['temperature'],
-                ' C' if CONFIG['units'] == 'metric' else ' F',
+		tempunit,
                 data['humidity']))
 
     def __print_entries_header(self):
@@ -128,7 +128,7 @@ class CmdShell(cmd.Cmd):
         fetch from=...
         
         For fetching data from the first entry until a certain date, use:
-        fectch to=...
+        fetch to=...
         
         Note that the dates must be either RDTN or ISO-8601.
         '''
@@ -171,7 +171,7 @@ class CmdShell(cmd.Cmd):
                 
                 # Print entries
                 for entry in sorted(data['results'].items(), key=self.get_cmp_key):
-                    self.__print_entry(entry[-1], True)
+                    self.__print_entry(entry[-1], data['units']['tempunits'], True)
     
     def do_config(self, args):
         '''
@@ -224,7 +224,7 @@ class CmdShell(cmd.Cmd):
 
         # Read entry, if any
         if data and data['length'] > 0:
-            self.__print_entry(data['-1'])
+            self.__print_entry(data['-1'], data['units']['tempunit'])
     
     def do_statistics(self, args):
         '''
