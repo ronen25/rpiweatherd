@@ -35,16 +35,18 @@ execute_process(
 )
 
 # Set version string
-if(NOT GIT_BRANCH EQUAL "master")
+if(NOT GIT_BRANCH MATCHES "master")
     # Set versions
+    message("\n\nTHIS IS NOT MASTER!!! ${GIT_BRANCH}\n\n")
     set(RPIWEATHERD_VERSION "\"${GIT_BRANCH}-${GIT_COMMIT_HASH}\"")
     set(RPIWEATHERD_VERSION_RAW "${GIT_BRANCH}-${GIT_COMMIT_HASH}")
 else()
     # Read version information from file
     file(READ version RPIWEATHERD_VERSION)
+    string(REGEX REPLACE "\n$" "" RPIWEATHERD_VERSION "${RPIWEATHERD_VERSION}")
 
     # Set versions
-    set(RPIWEATHERD_VERSION_RAW RPIWEATHERD_VERSION)
+    set(RPIWEATHERD_VERSION_RAW ${RPIWEATHERD_VERSION})
     set(RPIWEATHERD_VERSION "\"${RPIWEATHERD_VERSION}\"")
 endif()
 
