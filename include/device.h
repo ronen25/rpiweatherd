@@ -27,8 +27,11 @@
 #include "dht11.h"
 
 /* Function return codes */
-#define RETCODE_DEVICE_INIT_OK 0
-#define RETCODE_DEVICE_INIT_UNKNOWN -1
+#define RETCODE_DEVICE_INIT_OK          0
+#define RETCODE_DEVICE_INIT_UNKNOWN     -1
+
+/* Constants */
+#define ATTEMPT_LOG_THRESHOLD           5
 
 /* Typedefs for basic callbacks */
 typedef int (* device_callback)(int data_pin, float *arr);

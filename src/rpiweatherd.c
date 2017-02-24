@@ -137,11 +137,16 @@ void query_loop(void) {
 				case RPIWD_DEVRETCODE_DEVICE_FAILURE:
 				case RPIWD_DEVRETCODE_DATA_FAILURE:
                 case RPIWD_DEVRETCODE_GENERAL_FAILURE:
-                    if (qattempts % 5 == 0)
+                    /* Print once every couple of attempts */
+                    if (qattempts % ATTEMPT_LOG_THRESHOLD== 0) {
                         rpiwd_log(LOG_WARNING,
                                 "device %s failed to query; %d/%d attempts so far.",
-                                get_current_config()->device_name, ++qattempts,
+                                get_current_config()->device_name, qattempts,
                                 CONFIG_MAX_QUERY_ATTEMPTS);
+                    }
+
+                    /* Increase attempt count */
+                    qattempts++;
 
 					break;
 				case RPIWD_DEVRETCODE_MEMORY_ERROR:
@@ -158,8 +163,10 @@ void query_loop(void) {
         /* Execute triggers
          * Note: Measurements may be converted for trigger condition evaluation.
          * The measurements are basically useless to the daemon after they were
-         * written to the database, so it doesn't really matter. */
-        trigger_exec_callback(results);
+         * written to the database, so it doesn't really matter.
+         * Also, triggers should only be executed if the device queried successfully. */
+        if (ok_flag)
+            trigger_exec_callback(results);
 
 		/* Sleep to wait till the next query time */
 		rpiwd_sleep(rpiwd_units_to_milliseconds(get_current_config()->query_interval));
