@@ -17,10 +17,14 @@ The repository contains all code and submodules needed to successfully compile a
 |<code>extra/</code>|Administration script and an Example CLI client|
 |<code>deps/</code>|Dependencies required for building the daemon|
 
+## Installation
+As of version 1.1.1, binary ARMHF debian packages are available on the [Releases page](https://github.com/ronen25/rpiweatherd/releases). The .deb package will take care of all dependencies needed.
+You may also compile the daemon from source.
+
 ## Dependencies and Requirements
 1. **Raspberry Pi**
 <br />_Tested on Model A+ and RPi 2/3 Model B_
-2. **Raspbian 7 Wheezy or newer** <br />
+2. **Raspbian (late 2015 or newer)** <br />
    **Ubuntu 14.04 or newer** <br />
    **Arch Linux** <br />
 _Other distributions are not officialy supported but might also work._
@@ -45,7 +49,7 @@ Several development libraries must be installed in order to successfully compile
 ### Building and Installing
 1) Clone the repository:
 ```
-    $ git clone https://github.com/ronen25/rpiweatherd --branch 1.1.1-dev
+    $ git clone https://github.com/ronen25/rpiweatherd
 ```
 
 2) Create a <code>bin</code> directory, switch to it, and initiate compilation using CMake.
