@@ -25,6 +25,7 @@
 
 #include "devicevals.h"
 #include "dht11.h"
+#include "dht22.h"
 
 /* Function return codes */
 #define RETCODE_DEVICE_INIT_OK          0

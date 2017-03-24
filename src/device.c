@@ -21,7 +21,8 @@ static device *__selected_device;
 
 /* Array of supported device structures */
 device supported_devices[] = {
-	{ "dht11", 0, dht11_query_callback, dht11_test },
+    { "dht11", 0, dht11_query_callback, dht11_test },
+    { "dht22", 0, dht22_query_callback, dht22_test },
 	{ NULL, 0, NULL, NULL }
 };
 
