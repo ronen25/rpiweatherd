@@ -26,7 +26,7 @@
 #include "devicevals.h"
 #include "confighandler.h"
 
-#define DHT11_MAX_READS 				96
+#define DHT11_MAX_READS 				128
 #define DHT11_MAX_RESULT_STRING_LEN		8 /* xxx.xxx + '\0' ==> 8 characters */
 
 int dht11_query_callback(int data_pin, float *arr);
