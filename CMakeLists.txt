@@ -49,6 +49,24 @@ else()
     set(RPIWEATHERD_VERSION "\"${RPIWEATHERD_VERSION}\"")
 endif()
 
+# Set major, minor and patch versions.
+# This'll be used for packaging.
+string(REPLACE "." ";" VERSION_LIST ${RPIWEATHERD_VERSION_RAW})
+
+# Get list length
+list(LENGTH VERSION_LIST VERSION_LIST_LENGTH)
+
+# Get major and minor versions
+list(GET VERSION_LIST 0 VERSION_MAJOR)
+list(GET VERSION_LIST 1 VERSION_MINOR)
+
+# If patch version exists, get it as well.
+if (VERSION_LIST_LENGTH GREATER 2)
+    string(SUBSTRING "${VERSION_LIST}" 4 1 VERSION_PATCH)
+else()
+    set(VERSION_PATCH 0)
+endif()
+
 # Set build date
 string(TIMESTAMP RPIWEATHERD_BUILD_DATE)
 if (RPIWEATHERD_BUILD_DATE EQUAL "")
@@ -100,3 +118,17 @@ check_function_exists(getline HAVE_GETLINE)
 check_function_exists(vsyslog HAVE_VSYSLOG)
 check_function_exists(fork HAVE_FORK)
 check_function_exists(execl HAVE_EXECL)
+
+# CPack configuration
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_DESCRIPTION "rpiweatherd - A small daemon that records weather information.")
+set(CPACK_PACKAGE_VENDOR "Ronen Lapushner")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Ronen Lapushner")
+set(CPACK_PACKAGE_CONTACT "ronenk17@gmail.com")
+set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
+set(CPACK_PACKAGE_FILE_NAME "rpiweatherd-${RPIWEATHERD_VERSION_RAW}_${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3 (>= 3.2.0), git, libsqlite3-dev (>= 3.5), wiringpi (>= 1.1)")
+set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE ${CMAKE_SYSTEM_PROCESSOR})
+include(CPack)

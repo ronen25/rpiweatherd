@@ -45,7 +45,7 @@ Several development libraries must be installed in order to successfully compile
 ### Building and Installing
 1) Clone the repository:
 ```
-    $ git clone https://github.com/ronen25/rpiweatherd
+    $ git clone https://github.com/ronen25/rpiweatherd --branch 1.1.1-dev
 ```
 
 2) Create a <code>bin</code> directory, switch to it, and initiate compilation using CMake.
