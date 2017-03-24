@@ -17,28 +17,53 @@ The repository contains all code and submodules needed to successfully compile a
 |<code>extra/</code>|Administration script and an Example CLI client|
 |<code>deps/</code>|Dependencies required for building the daemon|
 
-## Installation
+## Pi/OS Support
+
+<table>
+<th>Pi Model</th>
+<th>OS</th>
+<th>OS Version</th>
+<th>Tested?</th>
+<th>Binary Package?</th>
+
+<tr>
+	<td rowspan=3>A+, 2, 3</td>
+	<td>Raspbian</td>
+	<td>Late 2015 and newer</td>
+	<td><b>v</b></td>
+	<td><b>v</b></td>
+</tr>
+<tr>
+	<td>Ubuntu</td>
+	<td>14.04 and newer</td>
+	<td><b>v</b></td>
+	<td><b>v</b></td>
+</tr>
+<tr>
+	<td>Arch Linux ARM</td>
+	<td>Late 2015 and newer</td>
+	<td><b>v</b></td>
+	<td><b>--</b></td>
+</tr>
+</table>
+
+> **Note**: Other distributions have not been tested, but will probably also work.
+> If you have successfully tested <code>rpiweatherd</code> on any unlisted platform, please contact
+> me.
+
+## Installation (Recommended)
 As of version 1.1.1, binary ARMHF debian packages are available on the [Releases page](https://github.com/ronen25/rpiweatherd/releases). The .deb package will take care of all dependencies needed.
 You may also compile the daemon from source.
 
-## Dependencies and Requirements
-1. **Raspberry Pi**
-<br />_Tested on Model A+ and RPi 2/3 Model B_
-2. **Raspbian (late 2015 or newer)** <br />
-   **Ubuntu 14.04 or newer** <br />
-   **Arch Linux** <br />
-_Other distributions are not officialy supported but might also work._
-3. **A Temperature sensor connected to the Pi.**
-<br />_See the [list of supported devices](https://github.com/ronen25/rpiweatherd/wiki/Device-Support) for more information._
-4. **GCC version 4.6 or newer**
+## Compiling From Source
+### Dependencies
+1. **GCC version 4.6 or newer**
 <br />_Required for some GNU extensions and the C99 standard._
-5. **CMake version 3.0 or newer**
-6. **SQLite3 development libraries version 3.5 or newer**
-7. **WiringPi version 1.1 or newer**
-8. **Python version 3.2 or newer**
+2. **CMake version 3.0 or newer**
+3. **SQLite3 development libraries version 3.5 or newer**
+4. **WiringPi version 1.1 or newer**
+5. **Python version 3.2 or newer**
 
-## Quick Setup Guide
-### Installing Dependencies
 Several development libraries must be installed in order to successfully compile <code>rpiweatherd</code>.
 
 |Distribution Name|Command to Install|
@@ -80,8 +105,11 @@ Several development libraries must be installed in order to successfully compile
 
 7) Daemon administration and a reference client can be found in the <code>extra/</code> folder.
 
+8) **Optional**: A [quick tutorial](https://github.com/ronen25/rpiweatherd/wiki/Tutorial:-Setting-Up-a-Small-Weather-Station-(From-Scratch)) for setting up rpiweatherd on the Raspberry Pi is available on the wiki.
+
 ## Clients
-The repository provides the <code>rpiweatherd-cli.py</code> client, which is a very simple, proof-of-concept client using a command-line interface.
+rpiweatherd is merely a server-side application; to communicate with it effectively (i.e. perhaps charting the data), a client-side program is needed.
+This repository provides the <code>rpiweatherd-cli.py</code> client, which is a very simple, proof-of-concept client which uses a command-line interface.
 
 I also provide a Qt-based GUI client, developed as a separate project - **[rpiweatherd-qtclient](https://github.com/ronen25/rpiweatherd-qtclient)**.
 
@@ -92,6 +120,7 @@ I also provide a Qt-based GUI client, developed as a separate project - **[rpiwe
 - [Running the Daemon](https://github.com/ronen25/rpiweatherd/wiki/Running-the-Daemon)
 - [Getting Data](https://github.com/ronen25/rpiweatherd/wiki/Getting-Data)
 - [Triggers](https://github.com/ronen25/rpiweatherd/wiki/Triggers)
+- [Tutorial: Setting Up a Small Weather Station](https://github.com/ronen25/rpiweatherd/wiki/Tutorial:-Setting-Up-a-Small-Weather-Station-(From-Scratch))
 
 ***
 
