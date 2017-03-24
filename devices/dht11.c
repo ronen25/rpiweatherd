@@ -57,10 +57,6 @@ int dht11_query_callback(int data_pin, float *arr) {
 
 	/* Check if we have 5 bytes and that the data is correct */
 	if ((j >= 40) && (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF))) {
-		/* Result is OK - allocate */
-		if (!arr)
-			return RPIWD_DEVRETCODE_MEMORY_ERROR;
-
 		/* Print to the buffer to later convert it to a float */
 		sprintf(buffer, "%d.%d", data[2], data[3]);
         arr[RPIWD_MEASURE_TEMPERATURE] = atof(buffer);
