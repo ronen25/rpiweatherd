@@ -40,3 +40,17 @@ endforeach(file)
 # Remove directory
 file(REMOVE_RECURSE "/etc/rpiweatherd")
 message("-- Uninstalling /etc/rpiweatherd directory.")
+
+# Remove the 'rpiweatherd' user
+execute_process(
+    COMMAND userdel rpiweatherd
+    RESULT_VARIABLE RPIWD_USER_DEL_RESULT
+)
+
+# Check return value.
+if (${RPIWD_USER_DEL_RESULT} EQUAL 0)
+    message("-- 'rpiweatherd' user removed successfully."
+else()
+    message("Error: could not remove existing 'rpiweatherd' user.
+             Please remove it manually!")
+endif()
