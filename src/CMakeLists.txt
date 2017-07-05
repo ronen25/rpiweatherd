@@ -55,9 +55,10 @@ target_link_libraries(rpiweatherd ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(rpiweatherd rt)
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 
-# Install target and run script to determine init system
+# Install target and run script to determine init system and create the
+# trigger execution user.
 install(TARGETS rpiweatherd DESTINATION bin)
-install(SCRIPT "${CMAKE_SOURCE_DIR}/PostInstall.cmake")
+install(SCRIPT "${CMAKE_SOURCE_DIR}/cmake/PostInstall.cmake")
 
 # Install files in skel folder and create it
 install(DIRECTORY DESTINATION "/etc/rpiweatherd/skel")

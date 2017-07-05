@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+include(RpiwdUser.cmake)
+
 # Install init script or system unit files - depending on the init system present
 execute_process(COMMAND "python3" "${CMAKE_CURRENT_LIST_DIR}/deps/FindInitSystem.py" 
 	OUTPUT_VARIABLE INIT_SYS_NAME)
@@ -29,6 +31,9 @@ else()
 	message("Unknown/unsupported init system: ${INIT_SYS_NAME}")
 	message("No daemon automation file will be installed!")
 endif ()
+
+# Create the 'rpiweatherd' user
+createRpiwdUser()
 
 # Install a blank configuration file
 file(INSTALL "${CMAKE_CURRENT_LIST_DIR}/skel/rpiweatherd.conf"
