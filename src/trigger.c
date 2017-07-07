@@ -459,7 +459,7 @@ int trigger_exec_callback(float *measurements) {
         }
     }
     else {
-        perror("Error loading triggers");
+        rpiwd_log(LOG_ERR, "Error: Error loading triggers; errno %d.", errno);
         return TRIGGER_ERROR_FILE_ERROR;
     }
 
