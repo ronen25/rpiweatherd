@@ -32,6 +32,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <syslog.h>
+#include <pwd.h>
 
 #include "logging.h"
 
@@ -81,6 +82,9 @@ int rpiwd_file_exists(const char *path);
 
 /* Conversion Helpers */
 int rpiwd_is_number(const char *str);
+
+/* UID utilities */
+int username_to_uid(const char *username, uid_t *result);
 
 #define RPIWD_CELSIUS_TO_FARENHEIT(var) \
     ((var) = ((var) * 9 / 5 + 32))

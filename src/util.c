@@ -249,3 +249,17 @@ int rpiwd_is_number(const char *str) {
 
     return 1;
 }
+
+/* NOTE: errno is never negative in getpwnam()'s case,
+ * so no problem returning it instead of an actual uid_t! */
+int username_to_uid(const char *username, uid_t *resPtr) {
+	const struct passwd *rpiwdUser = getpwnam(username);
+
+    /* Check if we have found the user */
+    if (rpiwdUser) {
+        *resPtr = rpiwdUser->pw_uid;
+        return 0;
+    }
+    else /* Delegate errno to caller */
+        return errno;
+}
