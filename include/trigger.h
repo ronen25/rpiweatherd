@@ -151,6 +151,7 @@ const char *cond_action_to_str(int action);
 const char *cond_type_to_str(int type);
 
 /* Helpers */
+int seteuid_rpiwd_user(void);
 void convert_measurements_maybe(const rpiwd_trigger *trig, float **measurements);
 void list_triggers(void);
 const size_t max_allowed_argstring_length(void);

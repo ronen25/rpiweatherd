@@ -499,6 +499,13 @@ int trigger_exec_callback(float *measurements) {
             if (fork_flag < 0)
                 rpiwd_log(LOG_ERR, "Failed to execute fork(): %s", strerror(errno));
             else if (fork_flag == 0) {
+                /* setuid() to the restricted "rpiweatherd" system user */
+                if (!seteuid_rpiwd_user()) {
+                    rpiwd_log(LOG_ERR, "Failed to execute trigger: failed to seteuid()"
+                                       " to system user.");
+                    _exit(EXIT_FAILURE);
+                }
+
                 /* Execute process */
                 retval = execl(trig->target,
                                trig->target,
@@ -527,6 +534,62 @@ int trigger_exec_callback(float *measurements) {
         if (retval == -1)
             rpiwd_log(LOG_ERR, "Trigger execution failed: %s", strerror(errno));
     }
+}
+
+int seteuid_rpiwd_user(void) {
+    uid_t userId = 0;
+    int resFlag, retCode = 0;
+
+    /* Get the UID for the "rpiweatherd" user */
+    resFlag = username_to_uid("rpiweatherd", &userId);
+    if (resFlag != 0) {
+        switch (resFlag) {
+            case ENOENT:
+            case ESRCH:
+            case EBADF:
+            case EPERM:
+                rpiwd_log(LOG_ERR, "Error: Could not find \'rpiweatherd\' system user!");
+                break;
+            case EINTR:
+                rpiwd_log(LOG_ERR, "Error: Signal was caught while trying seteuid() "
+                        "to 'rpiweatherd'!");
+                break;
+            case EIO:
+                rpiwd_log(LOG_ERR, "Error: I/O error!");
+                break;
+            case EMFILE:
+            case ENFILE:
+            case ENOMEM:
+            case ERANGE:
+                rpiwd_log(LOG_ERR, "Error: System memory/file descriptor limit "
+                                   "reached!");
+                break;
+            default:
+                rpiwd_log(LOG_ERR, "Error: Unknown error while seteuid() on "
+                                   "'rpiweatherd': errno %d.", errno);
+                break;
+        }
+    }
+    else {
+        /* Use seteuid() to set the effective user ID for the process */
+        resFlag = seteuid(userId);
+        if (resFlag != 0) {
+            switch (errno) {
+                case EINVAL:
+                    rpiwd_log(LOG_ERR, "Error: Could not seteuid() for 'rpiweatherd' "
+                                       "user:\n it is invalid!");
+                    break;
+                case EPERM:
+                    rpiwd_log(LOG_ERR, "Error: Process is unprivileged for seteuid()!");
+                    break;
+            }
+        }
+
+        /* Success! Whew! */
+        retCode = 1;
+    }
+
+    return retCode;
 }
 
 void convert_measurements_maybe(const rpiwd_trigger *trig, float **measurements) {
