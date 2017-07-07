@@ -448,7 +448,7 @@ int trigger_should_execute(rpiwd_trigger *trig, float **measurements) {
 
 int trigger_exec_callback(float *measurements) {
     char arg_string[TRIGGER_ARG_STRING_MAX_LENGTH];
-    int retval, arg_retval, fork_flag, eval_flag;
+    int retval = 0, arg_retval, fork_flag, eval_flag;
 
     /* Check if an update is needed */
     struct stat stat_info;
@@ -503,6 +503,13 @@ int trigger_exec_callback(float *measurements) {
                 if (!seteuid_rpiwd_user()) {
                     rpiwd_log(LOG_ERR, "Failed to execute trigger: failed to seteuid()"
                                        " to system user.");
+                    _exit(EXIT_FAILURE);
+                }
+
+                /* Set soft and hard execution timeouts for this child worker */
+                if (!trigger_child_set_timeouts()) {
+                    rpiwd_log(LOG_ERR, "Error: Failed to set timeout for child worker; "
+                            "errno %d", errno);
                     _exit(EXIT_FAILURE);
                 }
 
@@ -590,6 +597,17 @@ int seteuid_rpiwd_user(void) {
     }
 
     return retCode;
+}
+
+int trigger_child_set_timeouts(void) {
+    int result;
+    const struct rlimit limits = {
+            .rlim_cur = TRIGGER_CHILD_SOFT_TIMEOUT_SEC,
+            .rlim_max = TRIGGER_CHILD_HARD_TIMEOUT_SEC
+    };
+
+    result = setrlimit(RLIMIT_CPU, &limits);
+    return result;
 }
 
 void convert_measurements_maybe(const rpiwd_trigger *trig, float **measurements) {

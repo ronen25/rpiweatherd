@@ -27,6 +27,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <unistd.h>
 #include <wiringPi.h>
 
@@ -36,6 +38,8 @@
 /* Constants */
 #define TRIGGER_FILE_PATH                   "/etc/rpiweatherd/rpiwd_triggers.conf"
 #define TRIGGER_ARG_STRING_MAX_LENGTH       2049    /* 2048 + '\0' */
+#define TRIGGER_CHILD_SOFT_TIMEOUT_SEC      30
+#define TRIGGER_CHILD_HARD_TIMEOUT_SEC      60
 
 /* Error codes
  * 1xx - Internal errors
@@ -150,8 +154,11 @@ const char *cond_op_to_str(int op);
 const char *cond_action_to_str(int action);
 const char *cond_type_to_str(int type);
 
-/* Helpers */
+/* Child worker helpers */
 int seteuid_rpiwd_user(void);
+int trigger_child_set_timeouts(void);
+
+/* Helpers */
 void convert_measurements_maybe(const rpiwd_trigger *trig, float **measurements);
 void list_triggers(void);
 const size_t max_allowed_argstring_length(void);
