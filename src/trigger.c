@@ -20,6 +20,7 @@
 static rpiwd_trigger __rpiwd_trigger_table[CONFIG_MAX_TRIGGERS];
 static size_t __rpiwd_trigger_count = 0;
 static time_t __rpiwd_trigger_last_update;
+static volatile int __rpiwd_trigger_exec_ready;
 
 static const struct value_type_mapping_s VALUE_TYPE_MAPPING[] = {
     { "%temp%",         RPIWD_MEASURE_TEMPERATURE },
@@ -450,6 +451,9 @@ int trigger_exec_callback(float *measurements) {
     char arg_string[TRIGGER_ARG_STRING_MAX_LENGTH];
     int retval = 0, arg_retval, fork_flag, eval_flag;
 
+    /* Check if triggers are already executing.
+     * If they are, do not execute again! */
+
     /* Check if an update is needed */
     struct stat stat_info;
     if (stat(TRIGGER_FILE_PATH, &stat_info) == 0) {
@@ -535,11 +539,18 @@ int trigger_exec_callback(float *measurements) {
             }
 
             break;
+            default:
+                rpiwd_log(LOG_ERR, "Error: Unknown trigger action %d.", trig->action);
+                retval = -1;
+                break;
         }
 
         /* Log execution */
         if (retval == -1)
             rpiwd_log(LOG_ERR, "Trigger execution failed: %s", strerror(errno));
+
+        /* Trigger execution should resume again. */
+        __rpiwd_trigger_exec_ready = 1;
     }
 }
 
