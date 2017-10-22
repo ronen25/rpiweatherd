@@ -39,10 +39,10 @@ typedef int (* device_callback)(int data_pin, float *arr);
 typedef int (* device_test_callback)(int data_pin);
 
 typedef struct device_s {
-	const char *device_name;
-	int pin_data;
-	device_callback query_function;
-	device_test_callback test_function;
+    const char *device_name;
+    int pin_data;
+    device_callback query_function;
+    device_test_callback test_function;
 } device;
 
 extern device supported_devices[];
