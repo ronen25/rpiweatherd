@@ -48,14 +48,14 @@
 #define DAY_END(t)                          ((t) + 86399 - ((t) % 86400))
 
 /* Error codes */
-#define DBHANDLER_ERROR_SUCCESS 			 0
-#define DBHANDLER_ERROR_TOO_MANY_ENTRIES	-1
-#define DBHANDLER_ERROR_SQL_ERROR			-2
-#define DBHANDLER_ERROR_NO_MEMORY			-3
+#define DBHANDLER_ERROR_SUCCESS              0
+#define DBHANDLER_ERROR_TOO_MANY_ENTRIES    -1
+#define DBHANDLER_ERROR_SQL_ERROR           -2
+#define DBHANDLER_ERROR_NO_MEMORY           -3
 
 /* Stat table names */
-#define STAT_NAME_TOTAL_REQUESTS			"total_requests"
-#define STAT_NAME_TOTAL_ENTRIES				"total_entries"
+#define STAT_NAME_TOTAL_REQUESTS            "total_requests"
+#define STAT_NAME_TOTAL_ENTRIES              "total_entries"
 
 /* SQL table creation queries */
 static const char *SQLCMD_TABLE_CREATION_QUERIES[] = {
@@ -136,7 +136,7 @@ void db_thread_cleanup_routine(void *arg);
 
 /* Request functions */
 void request_write_entry(float temp, float humid, const char *location,
-		const char *device);
+        const char *device);
 
 /* Query preperation functions */
 char *format_query(const char *format, ...);
@@ -146,7 +146,7 @@ size_t exec_formatted_count_query(const char *count_query);
 entrylist *exec_fetch_query(const char *fcountq, const char *fselectq, bool keep_native_unit,
                             int *errcode);
 key_value_list *exec_key_value_query(const char *fcountq, const char *fselectq,
-		int *errcode);
+                                     int *errcode);
 
 /* Writing/reading functions */
 static int write_raw_entry(float temp, float humid, const char *location,
