@@ -41,14 +41,14 @@
 #define SQLITE_UNIT_SECONDS "seconds"
 #define SQLITE_UNIT_MINUTES "minutes"
 #define SQLITE_UNIT_HOURS   "hours"
-#define SQLITE_UNIT_DAYS	"days"
+#define SQLITE_UNIT_DAYS    "days"
 
 #define DIRECTION_STRING_FROM "from"
-#define DIRECTION_STRING_TO "to"
+#define DIRECTION_STRING_TO   "to"
 
-#define PID_NUMBER_BUFFER_LENGTH	16
+#define PID_NUMBER_BUFFER_LENGTH    16
 #define RPIWD_COPYFILE_BUFFSIZE     2048
-#define RPIWD_DOUBLE_BUFFER_LENGTH   24
+#define RPIWD_DOUBLE_BUFFER_LENGTH  24
 
 /* ASCII Art defines */
 #define ASCII_TITLE "rpiweatherd, version %s\n" \
