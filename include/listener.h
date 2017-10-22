@@ -51,20 +51,20 @@
 
 /* Callback return codes */
 #define CALLBACK_RETCODE_SUCCESS                 0
-#define CALLBACK_RETCODE_UNKNOWN_PARAM		-1001
-#define CALLBACK_RETCODE_PARAM_ERROR		-1002
-#define CALLBACK_RETCODE_UNKNOWN_COMMAND 	-1003
-#define CALLBACK_RETCODE_PARAMS_MISSING		-1004
-#define CALLBACK_RETCODE_TOO_MANY_PARAMS	-1005
-#define CALLBACK_RETCODE_NO_PARAMS_NEEDED	-1006
-#define CALLBACK_RETCODE_MEMORY_ERROR		-1007
-#define CALLBACK_RETCODE_DEVICE_ERROR		-1008
+#define CALLBACK_RETCODE_UNKNOWN_PARAM          -1001
+#define CALLBACK_RETCODE_PARAM_ERROR            -1002
+#define CALLBACK_RETCODE_UNKNOWN_COMMAND        -1003
+#define CALLBACK_RETCODE_PARAMS_MISSING         -1004
+#define CALLBACK_RETCODE_TOO_MANY_PARAMS        -1005
+#define CALLBACK_RETCODE_NO_PARAMS_NEEDED       -1006
+#define CALLBACK_RETCODE_MEMORY_ERROR           -1007
+#define CALLBACK_RETCODE_DEVICE_ERROR           -1008
 #define CALLBACK_RETCODE_DUPLICATE_PARAMS       -1009
 
 /* Command callback structure */
 typedef struct cmd_callback_s {
-	const char *cmd_name;
-	int (*callback)(http_cmd *params, rpiwd_mqmsg *msgbuff);
+    const char *cmd_name;
+    int (*callback)(http_cmd *params, rpiwd_mqmsg *msgbuff);
 } cmd_callback;
 
 /* Init/quit */
