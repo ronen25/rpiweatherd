@@ -53,15 +53,15 @@ static struct option rpiwd_long_options[] = {
 
 /* ============================ Signal Handlers ============================= */
 static void handle_sighup(int sig) {
-	__hupsignal = 1;
+    __hupsignal = 1;
 }
 
 static void handle_sigterm_sigint(int sig) {
-	__termsignal = 1;
+    __termsignal = 1;
 }
 
 void init_sighandling(void) {
-	signal(SIGHUP, handle_sighup);
+    signal(SIGHUP, handle_sighup);
     signal(SIGTERM, handle_sigterm_sigint);
     signal(SIGINT, handle_sigterm_sigint);
 }
@@ -69,14 +69,14 @@ void init_sighandling(void) {
 void init_routine(void) { }
 
 void quit_routine(void) {
-	/* Quit various subsystems */
-	quit_logging();
-	quit_dbhandler();
-	quit_listener_loop();
+    /* Quit various subsystems */
+    quit_logging();
+    quit_dbhandler();
+    quit_listener_loop();
     unload_triggers();
 
-	/* Free memory */
-	free_current_config();
+    /* Free memory */
+    free_current_config();
     free(config_path);
 
     /* Close pid file */
@@ -92,7 +92,7 @@ void version(void) {
 }
 
 void help(void) {
-	printf("\nUsage: rpiweatherd [ -v | -h | -l | -g | -c PATH]\n");
+    printf("\nUsage: rpiweatherd [ -v | -h | -l | -g | -c PATH]\n");
 
     printf("%-16s%-5s%-10s%-50s", "\n--config", "-c", "[path]",
            "Use a different configuration file");
@@ -114,28 +114,28 @@ void query_loop(void) {
     int slept = 0, retflag, qattempts, ok_flag;
     float results[RPIWD_MAX_MEASUREMENTS];
 
-	/* Query loop */
-	while (1) {
-		/* Reset flag */
-		ok_flag = 0;
-		qattempts = 0;
+    /* Query loop */
+    while (1) {
+        /* Reset flag */
+        ok_flag = 0;
+        qattempts = 0;
 
-		/* Query data */
-		while (!ok_flag && qattempts < CONFIG_MAX_QUERY_ATTEMPTS) {
+        /* Query data */
+        while (!ok_flag && qattempts < CONFIG_MAX_QUERY_ATTEMPTS) {
             retflag = device_query_current(results);
 
-			/* Check return value */
-			switch (retflag) {
-				case RPIWD_DEVRETCODE_SUCCESS:
-					request_write_entry(results[0], results[1], 
-							get_current_config()->measure_location,
-							get_current_config()->device_name);
-					ok_flag = 1;
-					qattempts = 0;
+            /* Check return value */
+            switch (retflag) {
+                case RPIWD_DEVRETCODE_SUCCESS:
+                    request_write_entry(results[0], results[1], 
+                            get_current_config()->measure_location,
+                            get_current_config()->device_name);
+                    ok_flag = 1;
+                    qattempts = 0;
 
-					break;
-				case RPIWD_DEVRETCODE_DEVICE_FAILURE:
-				case RPIWD_DEVRETCODE_DATA_FAILURE:
+                    break;
+                case RPIWD_DEVRETCODE_DEVICE_FAILURE:
+                case RPIWD_DEVRETCODE_DATA_FAILURE:
                 case RPIWD_DEVRETCODE_GENERAL_FAILURE:
                     /* Print once every couple of attempts */
                     if (qattempts % ATTEMPT_LOG_THRESHOLD== 0) {
@@ -148,17 +148,17 @@ void query_loop(void) {
                     /* Increase attempt count */
                     qattempts++;
 
-					break;
-				case RPIWD_DEVRETCODE_MEMORY_ERROR:
-					rpiwd_log(LOG_ERR, "out of memory to perform query.");
-					ok_flag = 1;
-					break;
-				default:
-					rpiwd_log(LOG_ERR, "error code %d encountered while querying.",
-							retflag);
-					break;
-			}
-		}
+                    break;
+                case RPIWD_DEVRETCODE_MEMORY_ERROR:
+                    rpiwd_log(LOG_ERR, "out of memory to perform query.");
+                    ok_flag = 1;
+                    break;
+                default:
+                    rpiwd_log(LOG_ERR, "error code %d encountered while querying.",
+                            retflag);
+                    break;
+            }
+        }
 
         /* Execute triggers
          * Note: Measurements may be converted for trigger condition evaluation.
@@ -168,27 +168,27 @@ void query_loop(void) {
         if (ok_flag)
             trigger_exec_callback(results);
 
-		/* Sleep to wait till the next query time */
-		rpiwd_sleep(rpiwd_units_to_milliseconds(get_current_config()->query_interval));
+        /* Sleep to wait till the next query time */
+        rpiwd_sleep(rpiwd_units_to_milliseconds(get_current_config()->query_interval));
 
-		/* Check if "woken up" */
-		if (__hupsignal) { /* SIGHUP = Reload all configs, devices, etc. */
-			__hupsignal = 0;
+        /* Check if "woken up" */
+        if (__hupsignal) { /* SIGHUP = Reload all configs, devices, etc. */
+            __hupsignal = 0;
 
-			quit_dbhandler();
+            quit_dbhandler();
             quit_listener_loop();
             unload_triggers();
-			init_dbhandler();
-			free_current_config();
-			init_current_config(config_path);
-			init_listener_loop(get_current_config()->num_worker_threads, 
+            init_dbhandler();
+            free_current_config();
+            init_current_config(config_path);
+            init_listener_loop(get_current_config()->num_worker_threads, 
                                get_current_config()->comm_port);
-		}
+        }
         else if (__termsignal) { /* SIGTERM = Terminate application (quickly) */
-			quit_routine();
-			break;
-		}
-	}
+            quit_routine();
+            break;
+        }
+    }
 }
 
 int main(int argc, char **argv) {
@@ -198,29 +198,29 @@ int main(int argc, char **argv) {
     bool run_in_foreground = false;
 
 #ifdef RPIWD_DEBUG
-	mtrace();
+    mtrace();
 #endif /* RPIWD_DEBUG */
 
-	/* version() acts as title message */
-	version();
+    /* version() acts as title message */
+    version();
 
-	/* Parse arguments */
+    /* Parse arguments */
     while ((opt = getopt_long(argc, argv, "tglfhvc:i", rpiwd_long_options,
                               &opt_index)) != -1) {
-		switch (opt) {
-			case 'c': /* Use some custom configuration file */
-				{
-					if (optarg)
-						config_path = strdup(optarg);
-					else {
+        switch (opt) {
+            case 'c': /* Use some custom configuration file */
+                {
+                    if (optarg)
+                        config_path = strdup(optarg);
+                    else {
                         fprintf(stderr, "error: Missing path to configuration file.\n");
-						return EXIT_FAILURE;
-					}
-				}
-				break;
-			case 'v': /* Show version information (already shown!) */
-				return EXIT_SUCCESS;
-			case 'g': /* Create a blank configuration file */
+                        return EXIT_FAILURE;
+                    }
+                }
+                break;
+            case 'v': /* Show version information (already shown!) */
+                return EXIT_SUCCESS;
+            case 'g': /* Create a blank configuration file */
                 {
                     /* Check if the file already exists */
                     if (rpiwd_file_exists(CONFIG_FILE_DEFAULT_LOCATION)) {
@@ -238,14 +238,14 @@ int main(int argc, char **argv) {
 
                     /* Generate a new configuration filee */
                     int status = generate_blank_config(CONFIG_FILE_DEFAULT_LOCATION);
-					if (status == -1)
-						perror("\nconfiguration error");
-					else {
+                    if (status == -1)
+                        perror("\nconfiguration error");
+                    else {
                         printf("\nConfig file generated at %s.",
                                CONFIG_FILE_DEFAULT_LOCATION);
                         printf("\nNOTE: Please configure it before use!\n");
-					}
-				}
+                    }
+                }
                 return EXIT_SUCCESS;
             case 'f': /* Run in foreground */
                 run_in_foreground = true;
@@ -253,16 +253,16 @@ int main(int argc, char **argv) {
             case 't': /* List triggers */
                 list_triggers();
                 return EXIT_SUCCESS;
-			case 'l': /* List all supported devices */
-				print_supported_device_names();
-				return EXIT_SUCCESS;
-			case 'h': /* Show help text */
-				help();
-				return EXIT_SUCCESS;
-			default: /* Unknown option */
+            case 'l': /* List all supported devices */
+                print_supported_device_names();
+                return EXIT_SUCCESS;
+            case 'h': /* Show help text */
+                help();
+                return EXIT_SUCCESS;
+            default: /* Unknown option */
                 fprintf(stderr, "Unknown option '%c'.\n", opt);
-				return EXIT_FAILURE;
-		}
+                return EXIT_FAILURE;
+        }
     }
 
     /* Initialize logging */
@@ -332,27 +332,27 @@ int main(int argc, char **argv) {
     /* Write the PID file */
     pid_fd = write_pid_file();
 
-	/* Initialize signal handling */
-	init_sighandling();
+    /* Initialize signal handling */
+    init_sighandling();
 
-	/* Initialize database */
-	if (init_dbhandler() == -1) {
-		rpiwd_log(LOG_ERR, "%s: error: Error initializing SQLite3 database.\n", argv[0]);
-		quit_dbhandler();
+    /* Initialize database */
+    if (init_dbhandler() == -1) {
+        rpiwd_log(LOG_ERR, "%s: error: Error initializing SQLite3 database.\n", argv[0]);
+        quit_dbhandler();
 
-		return EXIT_FAILURE;
-	}
+        return EXIT_FAILURE;
+    }
 
-	/* Finally - spin thread that listens for incoming GET requests */
-	init_listener_loop(get_current_config()->num_worker_threads, 
-					   get_current_config()->comm_port);
+    /* Finally - spin thread that listens for incoming GET requests */
+    init_listener_loop(get_current_config()->num_worker_threads, 
+                       get_current_config()->comm_port);
 
-	/* Initiate query loop */
-	query_loop();
+    /* Initiate query loop */
+    query_loop();
 
 #ifdef RPIWD_DEBUG
-	muntrace();
+    muntrace();
 #endif
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
