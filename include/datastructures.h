@@ -25,32 +25,32 @@
 #include "measurevals.h"
 
 /* Constants */
-#define JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE	32
+#define JSON_SERIALIZER_TEMP_ID_BUFFER_SIZE    32
 
 /* Entry structure */
 typedef struct entry_s {
-	int id;
-	char *record_date;
-	float temperature, humidity;
-	char *location;
-	char *device_name;
+    int id;
+    char *record_date;
+    float temperature, humidity;
+    char *location;
+    char *device_name;
 } entry;
 
 /* Entry list structure */
 typedef struct entrylist_s {
     size_t size, capacity;
-	entry *entries;
+    entry *entries;
 } entrylist;
 
 /* Generic key-value pair structure */
 typedef struct key_value_pair_s {
-	char *key, *value;
+    char *key, *value;
 } key_value_pair;
 
 /* Generic key-value list structure */
 typedef struct key_value_list_s {
-	size_t length, capacity;
-	key_value_pair *pairs;
+    size_t length, capacity;
+    key_value_pair *pairs;
 } key_value_list;
 
 /* Allocating/freeing entry lists */
