@@ -31,44 +31,44 @@
 #include "util.h"
 #include "measurevals.h"
 
-#define CONFIG_FILE_DEFAULT_LOCATION 		"/etc/rpiweatherd/rpiweatherd.conf"
-#define CONFIG_FILE_DEFAULT_FOLDER			"/etc/rpiweatherd"
-#define CONFIG_BLANK_FILE_LOCATION          "/etc/rpiweatherd/skel/rpiweatherd.conf"
-#define CONFIG_LOCATION				 		"measure_location"
-#define CONFIG_QUERY_INTERVAL		 		"query_interval"
-#define CONFIG_DEVICE_NAME			 		"device_name"
-#define CONFIG_DEVICE_CONFIG		 		"device_config"
-#define CONFIG_UNITS				 		"units"
-#define CONFIG_COMM_PORT			 		"comm_port"
-#define CONFIG_NUM_WORKER_THREADS			"num_worker_threads"
+#define CONFIG_FILE_DEFAULT_LOCATION       "/etc/rpiweatherd/rpiweatherd.conf"
+#define CONFIG_FILE_DEFAULT_FOLDER         "/etc/rpiweatherd"
+#define CONFIG_BLANK_FILE_LOCATION         "/etc/rpiweatherd/skel/rpiweatherd.conf"
+#define CONFIG_LOCATION                    "measure_location"
+#define CONFIG_QUERY_INTERVAL              "query_interval"
+#define CONFIG_DEVICE_NAME                 "device_name"
+#define CONFIG_DEVICE_CONFIG               "device_config"
+#define CONFIG_UNITS                       "units"
+#define CONFIG_COMM_PORT                   "comm_port"
+#define CONFIG_NUM_WORKER_THREADS          "num_worker_threads"
 
-#define CONFIG_ERROR_COMM_PORT 		 		-1
-#define CONFIG_ERROR_DEVICE_CONFIG	 		-2
-#define CONFIG_ERROR_NUM_WTHREADS			-3
+#define CONFIG_ERROR_COMM_PORT             -1
+#define CONFIG_ERROR_DEVICE_CONFIG         -2
+#define CONFIG_ERROR_NUM_WTHREADS          -3
 
 /* Possible configuration values */
-#define CONFIG_UNITS_METRIC					"metric"
-#define CONFIG_UNITS_IMPERIAL				"imperial"
-#define CONFIG_UNITS_UNITCHAR_METRIC		'm'
-#define CONFIG_UNITS_UNITCHAR_IMPERIAL		'i'
+#define CONFIG_UNITS_METRIC                "metric"
+#define CONFIG_UNITS_IMPERIAL              "imperial"
+#define CONFIG_UNITS_UNITCHAR_METRIC       'm'
+#define CONFIG_UNITS_UNITCHAR_IMPERIAL     'i'
 
 /* Default values */
-#define CONFIG_QUERY_INTERVAL_DEFAULT		"1h"
-#define CONFIG_COMM_PORT_DEFAULT			6005
-#define CONFIG_UNITS_DEFAULT				"imperial"
-#define CONFIG_NUM_WORKER_THREADS_DEFAULT	1
-#define CONFIG_NUM_WORKER_THREADS_MAX		4
-#define CONFIG_MAX_QUERY_ATTEMPTS			64
-#define CONFIG_MAX_TRIGGERS                 16
+#define CONFIG_QUERY_INTERVAL_DEFAULT        "1h"
+#define CONFIG_COMM_PORT_DEFAULT             6005
+#define CONFIG_UNITS_DEFAULT                 "imperial"
+#define CONFIG_NUM_WORKER_THREADS_DEFAULT    1
+#define CONFIG_NUM_WORKER_THREADS_MAX        4
+#define CONFIG_MAX_QUERY_ATTEMPTS            64
+#define CONFIG_MAX_TRIGGERS                  16
 
 /* Configuration structure */
 typedef struct rpiwd_config_s {
-	size_t config_count;
-	char *measure_location;
-	char *device_name;
-	int device_config;
-	char *query_interval;
-	int comm_port;
+    size_t config_count;
+    char *measure_location;
+    char *device_name;
+    int device_config;
+    char *query_interval;
+    int comm_port;
     int num_worker_threads;
 } rpiwd_config;
 
