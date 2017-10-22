@@ -95,7 +95,7 @@
     do {                                                    \
     (flag) = func((part), ((value_type *)((value_ptr))));   \
     if ((flag) != TRIGGER_PARSE_OK) {                       \
-        free((line));	                                    \
+        free((line));                                       \
         return (flag);                                      \
     }                                                       \
     } while(0);
