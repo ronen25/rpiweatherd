@@ -28,8 +28,8 @@
 #include "devicevals.h"
 #include "confighandler.h"
 
-#define DHT22_MAX_READS 				128
-#define DHT22_MAX_RESULT_STRING_LEN		8 /* xxx.xxx + '\0' ==> 8 characters */
+#define DHT22_MAX_READS                 128
+#define DHT22_MAX_RESULT_STRING_LEN     8 /* xxx.xxx + '\0' ==> 8 characters */
 
 /* Internal helper callback */
 static uint8_t sizecvt(const int read);
