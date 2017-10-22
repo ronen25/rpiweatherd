@@ -23,79 +23,79 @@ static device *__selected_device;
 device supported_devices[] = {
     { "dht11", 0, dht11_query_callback, dht11_test },
     { "dht22", 0, dht22_query_callback, dht22_test },
-	{ NULL, 0, NULL, NULL }
+    { NULL, 0, NULL, NULL }
 };
 
 int device_init_by_name(const char *device_name, int data_pin) {
-	device *ptr = supported_devices;
+    device *ptr = supported_devices;
 
-	while (ptr->device_name) {
-		if (strcmp(ptr->device_name, device_name) == 0) {
-			/* Set pinout */
-			pinMode(data_pin, INPUT);
-			ptr->pin_data = data_pin;
+    while (ptr->device_name) {
+        if (strcmp(ptr->device_name, device_name) == 0) {
+            /* Set pinout */
+            pinMode(data_pin, INPUT);
+            ptr->pin_data = data_pin;
 
-			/* Finish */
-			break;
-		}
+            /* Finish */
+            break;
+        }
 
-		ptr++;
-	}
+        ptr++;
+    }
 
-	if (!ptr)
-		return RETCODE_DEVICE_INIT_UNKNOWN;
+    if (!ptr)
+        return RETCODE_DEVICE_INIT_UNKNOWN;
 
-	/* Set the device */
-	__selected_device = ptr;
+    /* Set the device */
+    __selected_device = ptr;
 
-	/* Return the structure to be copied over to the application.
-	 * If device wasn't found return NULL */
+    /* Return the structure to be copied over to the application.
+     * If device wasn't found return NULL */
 
-	return RETCODE_DEVICE_INIT_OK;
+    return RETCODE_DEVICE_INIT_OK;
 }
 
 /* A function to test a device */
 int device_test_current(void) {
-	int retflag;
+    int retflag;
 
-	pthread_mutex_lock(&__mtx_device_lock);
-		retflag = __selected_device->test_function(__selected_device->pin_data);
-	pthread_mutex_unlock(&__mtx_device_lock);
+    pthread_mutex_lock(&__mtx_device_lock);
+        retflag = __selected_device->test_function(__selected_device->pin_data);
+    pthread_mutex_unlock(&__mtx_device_lock);
 
-	return retflag;
+    return retflag;
 }
 
 int device_query_current(float *arr) {
-	int retflag;
+    int retflag;
 
-	pthread_mutex_lock(&__mtx_device_lock);
+    pthread_mutex_lock(&__mtx_device_lock);
         retflag = __selected_device->query_function(__selected_device->pin_data,
-				arr);
-	pthread_mutex_unlock(&__mtx_device_lock);
+                arr);
+    pthread_mutex_unlock(&__mtx_device_lock);
 
-	return retflag;
+    return retflag;
 }
 
 device *get_current_device(void) {
-	device *ptr = NULL;
+    device *ptr = NULL;
 
-	pthread_mutex_lock(&__mtx_device_lock);
-		ptr = __selected_device;
-	pthread_mutex_unlock(&__mtx_device_lock);
+    pthread_mutex_lock(&__mtx_device_lock);
+        ptr = __selected_device;
+    pthread_mutex_unlock(&__mtx_device_lock);
 
-	return ptr;
+    return ptr;
 }
 
 /* Supported device names */
 void print_supported_device_names(void) {
-	device *ptr = supported_devices;
+    device *ptr = supported_devices;
 
-	printf("Supported devices:\n");
-	while (ptr->device_name) {
-		printf("%s, ", ptr->device_name);
+    printf("Supported devices:\n");
+    while (ptr->device_name) {
+        printf("%s, ", ptr->device_name);
 
-		ptr++;
-	}
+        ptr++;
+    }
 
-	printf("\n");
+    printf("\n");
 }
